@@ -416,7 +416,6 @@ mod tests {
             },
             operations: s3_operations,
             shapes: s3_shapes,
-            waiters: HashMap::new(),
         };
 
         services.insert("s3".to_string(), s3_service_def);
@@ -476,7 +475,6 @@ mod tests {
             },
             operations: s3control_operations,
             shapes: s3control_shapes,
-            waiters: HashMap::new(),
         };
 
         services.insert("s3control".to_string(), s3control_service_def);
@@ -507,7 +505,7 @@ mod tests {
         ServiceModelIndex {
             services,
             method_lookup,
-            waiter_to_services: HashMap::new(),
+            waiter_lookup: HashMap::new(),
         }
     }
 
