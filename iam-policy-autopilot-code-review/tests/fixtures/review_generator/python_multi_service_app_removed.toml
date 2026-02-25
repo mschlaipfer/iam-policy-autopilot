@@ -1,0 +1,123 @@
+description = "Deleted Python file that had four SDK calls across S3, SecretsManager, DynamoDB, and SQS – each removed SDK call line gets its own LEFT-side comment with the permissions that were required by that specific call"
+region = "us-east-1"
+account = "123456789012"
+explain = false
+
+diff = """
+diff --git a/app.py b/app.py
+deleted file mode 100644
+--- a/app.py
++++ /dev/null
+@@ -1,28 +0,0 @@
+-import boto3
+-
+-
+-def upload_file_to_s3(bucket_name, file_path, object_key):
+-    s3 = boto3.client("s3")
+-    s3.upload_file(file_path, bucket_name, object_key)
+-
+-
+-def read_secret(secret_name):
+-    client = boto3.client("secretsmanager")
+-    response = client.get_secret_value(SecretId=secret_name)
+-    return response["SecretString"]
+-
+-
+-def put_item_to_dynamodb(table_name, item):
+-    dynamodb = boto3.resource("dynamodb")
+-    table = dynamodb.Table(table_name)
+-    table.put_item(Item=item)
+-
+-
+-def send_sqs_message(queue_url, message_body):
+-    sqs = boto3.client("sqs")
+-    sqs.send_message(QueueUrl=queue_url, MessageBody=message_body)
+-
+-
+-if __name__ == "__main__":
+-    upload_file_to_s3("my-bucket", "data.csv", "uploads/data.csv")
+-    read_secret("my-app/db-password")
+"""
+
+[base_files]
+"app.py" = """
+import boto3
+
+
+def upload_file_to_s3(bucket_name, file_path, object_key):
+    s3 = boto3.client("s3")
+    s3.upload_file(file_path, bucket_name, object_key)
+
+
+def read_secret(secret_name):
+    client = boto3.client("secretsmanager")
+    response = client.get_secret_value(SecretId=secret_name)
+    return response["SecretString"]
+
+
+def put_item_to_dynamodb(table_name, item):
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    table.put_item(Item=item)
+
+
+def send_sqs_message(queue_url, message_body):
+    sqs = boto3.client("sqs")
+    sqs.send_message(QueueUrl=queue_url, MessageBody=message_body)
+
+
+if __name__ == "__main__":
+    upload_file_to_s3("my-bucket", "data.csv", "uploads/data.csv")
+    read_secret("my-app/db-password")
+"""
+
+# Comment 1: s3.upload_file on base line 6 – LEFT side
+[[expected_comments]]
+path = "app.py"
+line = 6
+side = "LEFT"
+body = """
+✅ **IAM permissions no longer required after this change:**
+
+- `kms:Decrypt`
+- `kms:GenerateDataKey`
+- `s3-object-lambda:PutObject`
+- `s3:PutObject`
+- `s3:PutObjectAcl`
+- `s3:PutObjectLegalHold`
+- `s3:PutObjectRetention`
+- `s3:PutObjectTagging`"""
+
+# Comment 2: client.get_secret_value on base line 11 – LEFT side
+[[expected_comments]]
+path = "app.py"
+line = 11
+side = "LEFT"
+body = """
+✅ **IAM permissions no longer required after this change:**
+
+- `kms:Decrypt`
+- `secretsmanager:GetSecretValue`"""
+
+# Comment 3: table.put_item on base line 18 – LEFT side
+[[expected_comments]]
+path = "app.py"
+line = 18
+side = "LEFT"
+body = """
+✅ **IAM permissions no longer required after this change:**
+
+- `dynamodb:PutItem`
+- `dynamodb:WriteDataForReplication`
+- `kms:Decrypt`"""
+
+# Comment 4: sqs.send_message on base line 23 – LEFT side
+[[expected_comments]]
+path = "app.py"
+line = 23
+side = "LEFT"
+body = """
+✅ **IAM permissions no longer required after this change:**
+
+- `kms:GenerateDataKey`
+- `sqs:SendMessage`"""

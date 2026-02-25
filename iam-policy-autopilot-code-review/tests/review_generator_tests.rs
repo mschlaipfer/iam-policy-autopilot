@@ -66,6 +66,7 @@ struct ReviewFixture {
     /// When absent, comments are anchored to line 1.
     #[serde(default)]
     diff: String,
+    #[serde(default)]
     expected_comments: Vec<ExpectedComment>,
 }
 
@@ -73,7 +74,14 @@ struct ReviewFixture {
 struct ExpectedComment {
     path: String,
     line: u32,
+    /// `"RIGHT"` (default) for comments on added lines; `"LEFT"` for removed lines.
+    #[serde(default = "default_side")]
+    side: String,
     body: String,
+}
+
+fn default_side() -> String {
+    "RIGHT".to_string()
 }
 
 // ── Single parametrised test – auto-discovers every *.toml fixture ────────────
@@ -135,6 +143,12 @@ async fn test_review_generator_fixture(
             actual.line, expected.line,
             "[{}] comment[{i}] line: got {}, expected {}",
             fixture.description, actual.line, expected.line,
+        );
+        let actual_side = format!("{:?}", actual.side).to_uppercase();
+        assert_eq!(
+            actual_side, expected.side,
+            "[{}] comment[{i}] side: got {:?}, expected {:?}",
+            fixture.description, actual_side, expected.side,
         );
         // TOML multiline strings include a leading newline; strip it.
         let expected_body = expected.body.trim_start_matches('\n');

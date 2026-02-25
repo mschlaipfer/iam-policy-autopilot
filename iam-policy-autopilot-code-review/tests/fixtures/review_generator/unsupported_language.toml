@@ -7,5 +7,3 @@ explain = false
 "src/main.rs" = """
 fn new() {}
 """
-
-expected_comments = []

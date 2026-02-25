@@ -4,13 +4,6 @@ account = "123456789012"
 service_hints = ["s3"]
 explain = false
 
-[head_files]
-"src/handler.py" = """
-import boto3
-s3 = boto3.client('s3')
-s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
-"""
-
 diff = """
 diff --git a/src/handler.py b/src/handler.py
 new file mode 100644
@@ -20,6 +13,13 @@ new file mode 100644
 +import boto3
 +s3 = boto3.client('s3')
 +s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
+"""
+
+[head_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
 """
 
 [[expected_comments]]

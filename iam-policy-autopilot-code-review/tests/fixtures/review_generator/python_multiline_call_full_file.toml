@@ -1,7 +1,22 @@
-description = "Multi-line s3.put_object call – full-file mode detects the permission correctly because the complete call is present in the file content"
+description = "Multi-line s3.put_object call – full-file mode detects the permission correctly because the complete call is present in the file content; produces two comments: one for new permissions on the added SDK call line, one for removed permissions"
 region = "us-east-1"
 account = "123456789012"
 explain = false
+
+diff = """
+diff --git a/src/handler.py b/src/handler.py
+--- a/src/handler.py
++++ b/src/handler.py
+@@ -1,7 +1,8 @@
+ import boto3
+ s3 = boto3.client('s3')
+-s3.get_object(
++s3.put_object(
+     Bucket='my-bucket',
+     Key='my-key',
++    Body=b'data',
+ )
+"""
 
 [base_files]
 "src/handler.py" = """
@@ -24,21 +39,8 @@ s3.put_object(
 )
 """
 
-diff = """
-diff --git a/src/handler.py b/src/handler.py
---- a/src/handler.py
-+++ b/src/handler.py
-@@ -1,7 +1,8 @@
- import boto3
- s3 = boto3.client('s3')
--s3.get_object(
-+s3.put_object(
-     Bucket='my-bucket',
-     Key='my-key',
-+    Body=b'data',
- )
-"""
-
+# Comment 1: new permissions for the added put_object call, anchored to line 3
+# (the start of the multi-line call expression)
 [[expected_comments]]
 path = "src/handler.py"
 line = 3
@@ -54,10 +56,14 @@ body = """
 - `s3:PutObjectTagging`
 
 > These permissions were detected via static analysis of the added code.
-> Review carefully before granting.
+> Review carefully before granting."""
 
----
-
+# Comment 2: removed permissions (get_object is gone), anchored to the removed line (3, LEFT side)
+[[expected_comments]]
+path = "src/handler.py"
+line = 3
+side = "LEFT"
+body = """
 ✅ **IAM permissions no longer required after this change:**
 
 - `kms:Decrypt`

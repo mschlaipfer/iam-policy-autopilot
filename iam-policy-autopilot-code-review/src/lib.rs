@@ -38,7 +38,7 @@
 //!     explain: true,
 //!     base_files,
 //!     head_files,
-//!     line_hints: HashMap::new(),
+//!     diff: String::new(),
 //! }).await?;
 //!
 //! let json = serde_json::to_string_pretty(&comments)?;
