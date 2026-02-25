@@ -1,0 +1,25 @@
+[package]
+name = "iam-policy-autopilot-code-review"
+version.workspace = true
+edition = "2021"
+description = "GitHub PR review tool for IAM Policy Autopilot: analyses diffs for AWS SDK permission changes."
+
+[dependencies]
+iam-policy-autopilot-policy-generation = { path = "../iam-policy-autopilot-policy-generation" }
+
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+log = { workspace = true }
+tempfile = { workspace = true }
+futures = { workspace = true }
+
+[dev-dependencies]
+rstest = "0.23"
+serde_json = { workspace = true }
+tokio = { workspace = true }
+toml = "0.8"
+
+[lints]
+workspace = true

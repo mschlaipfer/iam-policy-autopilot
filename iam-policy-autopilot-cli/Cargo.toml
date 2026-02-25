@@ -9,6 +9,7 @@ iam-policy-autopilot-access-denied = { path = "../iam-policy-autopilot-access-de
 iam-policy-autopilot-mcp-server = { path = "../iam-policy-autopilot-mcp-server" }
 iam-policy-autopilot-policy-generation = { path = "../iam-policy-autopilot-policy-generation" }
 iam-policy-autopilot-tools = { path = "../iam-policy-autopilot-tools" }
+iam-policy-autopilot-code-review = { path = "../iam-policy-autopilot-code-review" }
 
 anyhow = { workspace = true }
 clap = { workspace = true }

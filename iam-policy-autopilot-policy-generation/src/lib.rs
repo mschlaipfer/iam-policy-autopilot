@@ -12,7 +12,7 @@
 pub(crate) mod errors;
 
 // Re-export the enrichment module for public use
-pub(crate) mod enrichment;
+pub mod enrichment;
 
 // Re-export the providers module for public use
 pub(crate) mod providers;
@@ -34,8 +34,8 @@ pub mod api;
 use std::fmt::Display;
 use std::path::PathBuf;
 
-pub use enrichment::{Engine as EnrichmentEngine, Explanation};
-pub use extraction::{Engine as ExtractionEngine, ExtractedMethods, SdkMethodCall, SourceFile};
+pub use enrichment::{Engine as EnrichmentEngine, Explanation, Explanations, Operation, OperationSource, Reason};
+pub use extraction::{Engine as ExtractionEngine, ExtractedMethods, SdkMethodCall, SdkMethodCallMetadata, SourceFile};
 pub use policy_generation::{
     Effect, Engine as PolicyGenerationEngine, IamPolicy, PolicyType, PolicyWithMetadata, Statement,
 };

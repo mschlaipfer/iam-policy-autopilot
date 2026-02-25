@@ -138,10 +138,10 @@ pub mod core {
     pub struct SdkMethodCallMetadata {
         // === Required fields (set via constructor) ===
         /// The matched expression (the full method call expression)
-        pub(crate) expr: String,
+        pub expr: String,
 
         /// Position information (file path, line, column)
-        pub(crate) location: Location,
+        pub location: Location,
 
         // === Optional fields (set via with_* methods) ===
         /// List of method parameters with their metadata

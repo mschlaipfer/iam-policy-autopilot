@@ -4,6 +4,7 @@ members = [
     "iam-policy-autopilot-tools",
     "iam-policy-autopilot-mcp-server",
     "iam-policy-autopilot-access-denied",
+    "iam-policy-autopilot-code-review",
     "iam-policy-autopilot-cli"
 ]
 exclude = ["iam-policy-autopilot-lints"]

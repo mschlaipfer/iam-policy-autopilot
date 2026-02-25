@@ -1,0 +1,40 @@
+description = "New Python file adding s3.put_object – produces a single comment listing the new S3 write permissions; kms:GenerateDataKey is annotated as a Forward Access Session permission"
+region = "us-east-1"
+account = "123456789012"
+service_hints = ["s3"]
+explain = true
+
+[head_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
+"""
+
+diff = """
+diff --git a/src/handler.py b/src/handler.py
+new file mode 100644
+--- /dev/null
++++ b/src/handler.py
+@@ -0,0 +1,3 @@
++import boto3
++s3 = boto3.client('s3')
++s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
+"""
+
+[[expected_comments]]
+path = "src/handler.py"
+line = 3
+body = """
+⚠️ **New IAM permissions required by this change:**
+
+- `kms:GenerateDataKey` — needed for [Forward Access Session](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html) permissions
+- `s3-object-lambda:PutObject`
+- `s3:PutObject`
+- `s3:PutObjectAcl`
+- `s3:PutObjectLegalHold`
+- `s3:PutObjectRetention`
+- `s3:PutObjectTagging`
+
+> These permissions were detected via static analysis of the added code.
+> Review carefully before granting."""

@@ -1,0 +1,11 @@
+description = "Only Rust files (unsupported language) produces no review comments"
+region = "us-east-1"
+account = "123456789012"
+explain = false
+
+[head_files]
+"src/main.rs" = """
+fn new() {}
+"""
+
+expected_comments = []

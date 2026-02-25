@@ -21,6 +21,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use iam_policy_autopilot_code_review::{generate_review, ReviewInput};
 use iam_policy_autopilot_policy_generation::api::model::{
     AwsContext, ExtractSdkCallsConfig, GeneratePolicyConfig,
 };
@@ -339,6 +340,99 @@ Examples:\n  \
         explain: Option<Vec<String>>,
     },
 
+    /// Generate IAM policy review comments from a unified diff
+    #[command(
+        long_about = "Analyses before/after file versions for AWS SDK permission changes \
+and outputs a JSON array of inline review comment objects suitable for posting to the GitHub \
+Pull Request review API.\n\n\
+Each comment identifies new or removed IAM permissions on the changed lines.\n\n\
+Example:\n  \
+iam-policy-autopilot generate-review --base-file src/handler.py:before.py --head-file src/handler.py:after.py --diff changes.patch --pretty"
+    )]
+    GenerateReview {
+        /// Base (before) file(s) in the format `<path>:<content-file>`.
+        ///
+        /// `<path>` is the file path as it appears in the repository (used to
+        /// detect the language and as the comment anchor key).
+        /// `<content-file>` is a local file containing the full source at the
+        /// base commit.  May be specified multiple times for multi-file reviews.
+        #[arg(
+            long = "base-file",
+            value_name = "PATH:CONTENT_FILE",
+            num_args = 0..,
+            long_help = "Full source file at the base (before) commit, in the format \
+`<repo-path>:<content-file>`.  May be repeated for multiple files."
+        )]
+        base_files: Vec<String>,
+
+        /// Head (after) file(s) in the format `<path>:<content-file>`.
+        ///
+        /// Same format as `--base-file` but for the head commit.
+        #[arg(
+            long = "head-file",
+            value_name = "PATH:CONTENT_FILE",
+            num_args = 0..,
+            long_help = "Full source file at the head (after) commit, in the format \
+`<repo-path>:<content-file>`.  May be repeated for multiple files."
+        )]
+        head_files: Vec<String>,
+
+        /// Path to a unified diff file (e.g. from `git diff`) used to anchor review comments.
+        ///
+        /// When provided, comments are anchored to the first added line that contains
+        /// an SDK call.  When omitted, comments are anchored to line 1.
+        #[arg(
+            long = "diff",
+            value_name = "DIFF_FILE",
+            long_help = "Path to a unified diff file (e.g. output of `git diff`) used to \
+determine which lines were added in the PR.  Comments are anchored to the first added line \
+that contains an SDK call.  When omitted, comments are anchored to line 1."
+        )]
+        diff_file: Option<String>,
+
+        /// Enable debug logging output to stderr (most verbose)
+        #[arg(hide = true, short = 'd', long = "debug")]
+        debug: bool,
+
+        /// Format JSON output with indentation for readability
+        #[arg(short = 'p', long = "pretty")]
+        pretty: bool,
+
+        /// AWS region for ARN generation
+        #[arg(
+            short = 'r',
+            long = "region",
+            default_value = "*",
+            long_help = "AWS region to use for ARN generation in the generated policies."
+        )]
+        region: String,
+
+        /// AWS account ID for ARN generation
+        #[arg(
+            short = 'a',
+            long = "account",
+            default_value = "*",
+            long_help = "AWS account ID to use for ARN generation in the generated policies."
+        )]
+        account: String,
+
+        /// Filter analysis to specific AWS services
+        #[arg(
+            long = "service-hints",
+            num_args = 1..,
+            long_help = SERVICE_HINTS_LONG_HELP,
+        )]
+        service_hints: Option<Vec<String>>,
+
+        /// Include explanations for why each action was added
+        #[arg(
+            long = "explain",
+            long_help = "When enabled, each review comment includes a human-readable explanation \
+of why each IAM action was added, referencing the SDK call that triggered it."
+        )]
+        explain: bool,
+    },
+
     /// Start MCP server
     #[command(
         long_about = "Starts an MCP server that provides IAM policy generation \
@@ -508,6 +602,74 @@ async fn handle_generate_policy(config: &GeneratePolicyCliConfig) -> Result<()> 
     Ok(())
 }
 
+/// Parse a list of `"<repo-path>:<content-file>"` strings into a
+/// `HashMap<String, String>` mapping repo path → file content.
+fn parse_file_args(args: &[String]) -> Result<std::collections::HashMap<String, String>> {
+    let mut map = std::collections::HashMap::new();
+    for arg in args {
+        // Split on the first `:` only so Windows paths like `C:\foo` still work.
+        let (repo_path, content_file) = arg
+            .split_once(':')
+            .with_context(|| format!("Invalid --base-file/--head-file argument {arg:?}: expected format <repo-path>:<content-file>"))?;
+        let content = std::fs::read_to_string(content_file)
+            .with_context(|| format!("Failed to read content file {content_file:?}"))?;
+        map.insert(repo_path.to_string(), content);
+    }
+    Ok(map)
+}
+
+/// Handle the generate-review subcommand
+async fn handle_generate_review(
+    base_file_args: Vec<String>,
+    head_file_args: Vec<String>,
+    diff_file: Option<String>,
+    region: String,
+    account: String,
+    service_hints: Option<Vec<String>>,
+    explain: bool,
+    pretty: bool,
+) -> Result<()> {
+    info!("Running generate-review command");
+
+    let base_files = parse_file_args(&base_file_args)
+        .context("Failed to parse --base-file arguments")?;
+    let head_files = parse_file_args(&head_file_args)
+        .context("Failed to parse --head-file arguments")?;
+
+    let diff = match diff_file {
+        Some(path) => std::fs::read_to_string(&path)
+            .with_context(|| format!("Failed to read diff file {path:?}"))?,
+        None => String::new(),
+    };
+
+    let comments = generate_review(ReviewInput {
+        region,
+        account,
+        service_hints,
+        explain,
+        base_files,
+        head_files,
+        diff,
+    })
+    .await
+    .context("Failed to generate review comments")?;
+
+    let json_output = if pretty {
+        iam_policy_autopilot_policy_generation::JsonProvider::stringify_pretty(&comments)
+            .context("Failed to serialize review comments to pretty JSON")?
+    } else {
+        iam_policy_autopilot_policy_generation::JsonProvider::stringify(&comments)
+            .context("Failed to serialize review comments to JSON")?
+    };
+
+    print!("{json_output}");
+    if pretty {
+        println!();
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -611,6 +773,34 @@ async fn main() {
             }
         }
 
+        Commands::GenerateReview {
+            base_files,
+            head_files,
+            diff_file,
+            debug,
+            pretty,
+            region,
+            account,
+            service_hints,
+            explain,
+        } => {
+            // Initialize logging
+            if let Err(e) = init_logging(debug) {
+                eprintln!("iam-policy-autopilot: Failed to initialize logging: {e}");
+                process::exit(1);
+            }
+
+            match handle_generate_review(base_files, head_files, diff_file, region, account, service_hints, explain, pretty)
+                .await
+            {
+                Ok(()) => ExitCode::Success,
+                Err(e) => {
+                    print_cli_command_error(e);
+                    ExitCode::Error
+                }
+            }
+        }
+
         Commands::McpServer { transport, port } => {
             match start_mcp_server(transport, port).await {
                 Ok(()) => ExitCode::Success,
@@ -641,3 +831,4 @@ fn print_cli_command_error(e: anyhow::Error) {
         source = err.source();
     }
 }
+

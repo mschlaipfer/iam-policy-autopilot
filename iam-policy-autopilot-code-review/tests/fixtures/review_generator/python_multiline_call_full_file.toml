@@ -1,0 +1,69 @@
+description = "Multi-line s3.put_object call – full-file mode detects the permission correctly because the complete call is present in the file content"
+region = "us-east-1"
+account = "123456789012"
+explain = false
+
+[base_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.get_object(
+    Bucket='my-bucket',
+    Key='my-key',
+)
+"""
+
+[head_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.put_object(
+    Bucket='my-bucket',
+    Key='my-key',
+    Body=b'data',
+)
+"""
+
+diff = """
+diff --git a/src/handler.py b/src/handler.py
+--- a/src/handler.py
++++ b/src/handler.py
+@@ -1,7 +1,8 @@
+ import boto3
+ s3 = boto3.client('s3')
+-s3.get_object(
++s3.put_object(
+     Bucket='my-bucket',
+     Key='my-key',
++    Body=b'data',
+ )
+"""
+
+[[expected_comments]]
+path = "src/handler.py"
+line = 3
+body = """
+⚠️ **New IAM permissions required by this change:**
+
+- `kms:GenerateDataKey`
+- `s3-object-lambda:PutObject`
+- `s3:PutObject`
+- `s3:PutObjectAcl`
+- `s3:PutObjectLegalHold`
+- `s3:PutObjectRetention`
+- `s3:PutObjectTagging`
+
+> These permissions were detected via static analysis of the added code.
+> Review carefully before granting.
+
+---
+
+✅ **IAM permissions no longer required after this change:**
+
+- `kms:Decrypt`
+- `s3-object-lambda:GetObject`
+- `s3:GetObject`
+- `s3:GetObjectLegalHold`
+- `s3:GetObjectRetention`
+- `s3:GetObjectTagging`
+- `s3:GetObjectVersion`"""

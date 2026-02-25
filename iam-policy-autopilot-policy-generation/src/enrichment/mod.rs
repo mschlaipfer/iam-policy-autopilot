@@ -41,14 +41,15 @@ pub struct Reason {
     pub operations: Vec<Arc<Operation>>,
 }
 
+/// Represents an AWS SDK operation that was identified as requiring IAM permissions.
 #[derive(Debug, Clone, Serialize, Eq, JsonSchema)]
 #[serde(rename_all = "PascalCase")]
 pub struct Operation {
-    /// Name of the service
+    /// Name of the service (e.g. `"s3"`, `"kms"`)
     pub service: String,
-    /// Name of the operation
+    /// Name of the operation (e.g. `"PutObject"`, `"Decrypt"`)
     pub name: String,
-    /// Source of the operation,
+    /// How this operation was discovered (extracted from source, provided, or via FAS)
     pub source: OperationSource,
     /// Disallow struct construction, need to use Self::from_call or Operation::from(FasOperation)
     #[serde(skip)]
@@ -178,14 +179,15 @@ where
     map.end()
 }
 
+/// Describes how an [`Operation`] was discovered during policy generation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, JsonSchema)]
 #[serde(rename_all = "PascalCase")]
 pub enum OperationSource {
-    /// Operation extracted from source files
+    /// Operation was extracted directly from source code with full metadata.
     Extracted(SdkMethodCallMetadata),
-    /// Operation provided (no metadata available)
+    /// Operation was provided without source-code metadata.
     Provided,
-    /// Operation comes from FAS expansion
+    /// Operation was added via Forward Access Sessions (FAS) expansion.
     Fas(Vec<FasContext>),
 }
 
@@ -215,6 +217,10 @@ pub struct Explanations {
 }
 
 impl Explanations {
+    /// URL for the AWS documentation on Forward Access Sessions.
+    pub const FAS_DOCS_URL: &str =
+        "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html";
+
     const FAS: &str =
         "The explanation contains an operation added due to Forward Access Sessions (FAS). See https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html.";
 
@@ -273,9 +279,12 @@ pub struct EnrichedSdkMethodCall<'a> {
     pub(crate) sdk_method_call: &'a SdkMethodCall,
 }
 
+/// IAM condition operator used in policy statements.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, JsonSchema)]
 pub enum Operator {
+    /// Exact string match condition.
     StringEquals,
+    /// Wildcard string match condition.
     StringLike,
 }
 

@@ -1,0 +1,24 @@
+description = "Python diff changes only the argument to s3.get_object (bucket name) – the SDK method is unchanged so the IAM action set is identical and no review comment should be produced"
+region = "us-east-1"
+account = "123456789012"
+service_hints = ["s3"]
+explain = false
+
+[base_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.get_object(Bucket='old-bucket', Key='my-key')
+"""
+
+[head_files]
+"src/handler.py" = """
+import boto3
+s3 = boto3.client('s3')
+s3.get_object(Bucket='new-bucket', Key='my-key')
+"""
+
+# The SDK method (get_object) is the same on both sides.
+# The permission set is identical, so the delta is empty and no comment
+# should be emitted.
+expected_comments = []
