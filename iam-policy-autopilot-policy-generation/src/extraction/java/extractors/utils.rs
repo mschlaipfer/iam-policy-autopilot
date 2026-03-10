@@ -206,16 +206,12 @@ pub(super) fn find_receiver_declaration(
                 if child_kind_str == INFERRED_PARAMETERS {
                     // (x, y) — identifiers inside the inferred_parameters node
                     for param in child.children() {
-                        if param.kind().as_ref() == IDENTIFIER
-                            && param.text() == receiver_var_name
+                        if param.kind().as_ref() == IDENTIFIER && param.text() == receiver_var_name
                         {
                             return Some(ReceiverDeclaration {
                                 expr: param.text().to_string(),
                                 type_name: None,
-                                location: Location::from_node(
-                                    source_file.path.clone(),
-                                    &param,
-                                ),
+                                location: Location::from_node(source_file.path.clone(), &param),
                             });
                         }
                     }
@@ -232,9 +228,7 @@ pub(super) fn find_receiver_declaration(
                             }
                         }
                     }
-                } else if child_kind_str == IDENTIFIER
-                    && child.text() == receiver_var_name
-                {
+                } else if child_kind_str == IDENTIFIER && child.text() == receiver_var_name {
                     // x -> x.foo()  — single unparenthesised lambda parameter
                     return Some(ReceiverDeclaration {
                         expr: child.text().to_string(),
@@ -343,11 +337,9 @@ pub(super) fn find_receiver_declaration(
             // because field ordering relative to the call site is not meaningful.
             for child in ancestor.children() {
                 if child.kind().as_ref() == FIELD_DECLARATION {
-                    if let Some(decl) = extract_declaration_from_field_decl(
-                        &child,
-                        receiver_var_name,
-                        source_file,
-                    ) {
+                    if let Some(decl) =
+                        extract_declaration_from_field_decl(&child, receiver_var_name, source_file)
+                    {
                         return Some(decl);
                     }
                 }
@@ -446,7 +438,11 @@ fn extract_declaration_from_local_var_decl(
         }
 
         // `var` is Java's inferred type keyword — not a concrete type name we can look up
-        let type_name = if type_text == "var" { None } else { Some(type_text) };
+        let type_name = if type_text == "var" {
+            None
+        } else {
+            Some(type_text)
+        };
 
         // The initializer is the last child of variable_declarator (after the `=` token)
         let last_node = decl_children.last()?;
@@ -504,7 +500,11 @@ fn extract_declaration_from_field_decl(
     let mut children = decl_node.children().peekable();
 
     // Skip modifiers if present
-    if children.peek().map(|n| n.kind().as_ref() == MODIFIERS).unwrap_or(false) {
+    if children
+        .peek()
+        .map(|n| n.kind().as_ref() == MODIFIERS)
+        .unwrap_or(false)
+    {
         children.next();
     }
 
@@ -531,7 +531,11 @@ fn extract_declaration_from_field_decl(
         }
 
         // `var` is Java's inferred type keyword — not a concrete type name we can look up
-        let type_name = if type_text == "var" { None } else { Some(type_text) };
+        let type_name = if type_text == "var" {
+            None
+        } else {
+            Some(type_text)
+        };
 
         // The initializer is the last child of variable_declarator (after the `=` token)
         let last_node = decl_children.last()?;
@@ -605,7 +609,11 @@ fn extract_declaration_from_resource(
     }
 
     // `var` is Java's inferred type keyword — not a concrete type name we can look up
-    let type_name = if type_text == "var" { None } else { Some(type_text) };
+    let type_name = if type_text == "var" {
+        None
+    } else {
+        Some(type_text)
+    };
 
     // The initializer is the last child (after the `=` token).
     // If the last child is the identifier itself, there is no initializer (shouldn't
@@ -653,7 +661,11 @@ fn extract_declaration_from_formal_param(
         return None;
     }
 
-    let type_name = if type_text == "var" { None } else { Some(type_text) };
+    let type_name = if type_text == "var" {
+        None
+    } else {
+        Some(type_text)
+    };
     let expr = param_node.text().to_string();
     let location = Location::from_node(source_file.path.clone(), param_node);
 

@@ -67,10 +67,7 @@ pub(crate) fn resolve_services_by_type_name(
     // Fast path: fully-qualified type name — extract service directly from the FQN.
     // e.g. "software.amazon.awssdk.services.s3.waiters.S3AsyncWaiter" → "s3"
     if let Some(svc) = extract_service_from_fqn(type_name) {
-        return all_services
-            .into_iter()
-            .filter(|s| s == &svc)
-            .collect();
+        return all_services.into_iter().filter(|s| s == &svc).collect();
     }
 
     // Slow path: simple (unqualified) type name — look up service via the file's import list.
@@ -83,10 +80,7 @@ pub(crate) fn resolve_services_by_type_name(
     match service {
         Some(svc) => {
             // Filter the full candidate list to only the pinned service
-            all_services
-                .into_iter()
-                .filter(|s| s == &svc)
-                .collect()
+            all_services.into_iter().filter(|s| s == &svc).collect()
         }
         None => {
             // No specific import matched — the file may use a wildcard import.
@@ -159,10 +153,8 @@ mod tests {
             Some("s3")
         );
         assert_eq!(
-            extract_service_from_fqn(
-                "software.amazon.awssdk.services.cloudvault.CloudVaultClient"
-            )
-            .as_deref(),
+            extract_service_from_fqn("software.amazon.awssdk.services.cloudvault.CloudVaultClient")
+                .as_deref(),
             Some("cloudvault")
         );
     }

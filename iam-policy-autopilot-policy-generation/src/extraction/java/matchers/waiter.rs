@@ -154,9 +154,8 @@ pub(crate) fn match_waiters(
         }
 
         for (method_name, group_services) in by_operation {
-            let metadata =
-                SdkMethodCallMetadata::new(waiter.expr.clone(), waiter.location.clone())
-                    .with_parameters(waiter.parameters.clone());
+            let metadata = SdkMethodCallMetadata::new(waiter.expr.clone(), waiter.location.clone())
+                .with_parameters(waiter.parameters.clone());
 
             output.push(SdkMethodCall {
                 name: method_name,
@@ -173,8 +172,5 @@ pub(crate) fn match_waiters(
 mod tests {
     use crate::java_matcher_test;
 
-    java_matcher_test!(
-        "tests/java/matchers/waiters/*.json",
-        test_waiter_matching
-    );
+    java_matcher_test!("tests/java/matchers/waiters/*.json", test_waiter_matching);
 }

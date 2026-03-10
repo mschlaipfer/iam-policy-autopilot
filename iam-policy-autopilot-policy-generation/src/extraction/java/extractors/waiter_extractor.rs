@@ -10,7 +10,11 @@
 
 use convert_case::{Case, Casing};
 
-use crate::extraction::java::extractor::{JavaNodeMatch, SdkExtractor};
+use ast_grep_core::tree_sitter::StrDoc;
+use ast_grep_core::NodeMatch;
+use ast_grep_language::Java;
+
+use crate::extraction::framework::SdkExtractor;
 use crate::extraction::java::extractors::utils;
 use crate::extraction::java::types::{ExtractionResult, Waiter};
 use crate::extraction::MethodCallResultUsage;
@@ -43,7 +47,9 @@ use crate::SourceFile;
 /// The label `$WAIT_METHOD` is the discriminator (captures the `waitUntil*` method name).
 pub(crate) struct JavaWaiterCallExtractor;
 
-impl SdkExtractor for JavaWaiterCallExtractor {
+impl SdkExtractor<Java> for JavaWaiterCallExtractor {
+    type ExtractionResult = ExtractionResult;
+
     fn rule_yaml(&self) -> &'static str {
         "kind: method_invocation\nall:\n  - has:\n      field: object\n      pattern: $WAITER_OBJ\n  - has:\n      field: name\n      regex: '^waitUntil'\n      pattern: $WAIT_METHOD"
     }
@@ -54,7 +60,7 @@ impl SdkExtractor for JavaWaiterCallExtractor {
 
     fn process(
         &self,
-        node_match: &JavaNodeMatch<'_>,
+        node_match: &NodeMatch<'_, StrDoc<Java>>,
         source_file: &SourceFile,
         result: &mut ExtractionResult,
     ) {
@@ -119,7 +125,9 @@ fn detect_assignment_usage(
     node: &ast_grep_core::Node<ast_grep_core::tree_sitter::StrDoc<ast_grep_language::Java>>,
 ) -> Option<MethodCallResultUsage> {
     // Level 1: the immediate parent must be `variable_declarator`.
-    let variable_declarator = node.parent().filter(|p| p.kind().as_ref() == utils::VARIABLE_DECLARATOR)?;
+    let variable_declarator = node
+        .parent()
+        .filter(|p| p.kind().as_ref() == utils::VARIABLE_DECLARATOR)?;
 
     // The first child of `variable_declarator` is the declared variable name.
     let variable_name = variable_declarator

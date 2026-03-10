@@ -6,7 +6,11 @@
 //!
 //! Plain function calls without a receiver are excluded by requiring the `object` field.
 
-use crate::extraction::java::extractor::{JavaNodeMatch, SdkExtractor};
+use ast_grep_core::tree_sitter::StrDoc;
+use ast_grep_core::NodeMatch;
+use ast_grep_language::Java;
+
+use crate::extraction::framework::SdkExtractor;
 use crate::extraction::java::extractors::utils;
 use crate::extraction::java::types::{Call, ExtractionResult};
 use crate::Location;
@@ -34,7 +38,9 @@ use crate::SourceFile;
 /// ```
 pub(crate) struct JavaMethodCallExtractor;
 
-impl SdkExtractor for JavaMethodCallExtractor {
+impl SdkExtractor<Java> for JavaMethodCallExtractor {
+    type ExtractionResult = ExtractionResult;
+
     fn rule_yaml(&self) -> &'static str {
         "kind: method_invocation\nall:\n  - has:\n      field: object\n      pattern: $MC_OBJ\n  - has:\n      field: name\n      pattern: $MC_METHOD"
     }
@@ -45,7 +51,7 @@ impl SdkExtractor for JavaMethodCallExtractor {
 
     fn process(
         &self,
-        node_match: &JavaNodeMatch<'_>,
+        node_match: &NodeMatch<'_, StrDoc<Java>>,
         source_file: &SourceFile,
         result: &mut ExtractionResult,
     ) {
@@ -116,10 +122,15 @@ mod tests {
         let root = sg.root();
 
         fn find<'a>(
-            node: ast_grep_core::Node<'a, ast_grep_core::tree_sitter::StrDoc<ast_grep_language::Java>>,
+            node: ast_grep_core::Node<
+                'a,
+                ast_grep_core::tree_sitter::StrDoc<ast_grep_language::Java>,
+            >,
             kind: &str,
             text: &str,
-        ) -> Option<ast_grep_core::Node<'a, ast_grep_core::tree_sitter::StrDoc<ast_grep_language::Java>>> {
+        ) -> Option<
+            ast_grep_core::Node<'a, ast_grep_core::tree_sitter::StrDoc<ast_grep_language::Java>>,
+        > {
             if node.kind().as_ref() == kind && node.text() == text {
                 return Some(node);
             }
@@ -131,8 +142,9 @@ mod tests {
             None
         }
 
-        let node = find(root, expected_kind, node_text)
-            .unwrap_or_else(|| panic!("no {expected_kind} node with text {node_text:?} found in: {src}"));
+        let node = find(root, expected_kind, node_text).unwrap_or_else(|| {
+            panic!("no {expected_kind} node with text {node_text:?} found in: {src}")
+        });
         resolve_java_literal(&node)
     }
 
@@ -140,8 +152,8 @@ mod tests {
     ///
     /// `node_text` is the raw source text including quotes (e.g. `"\"my-bucket\""`).
     #[rstest]
-    #[case("\"my-bucket\"",   "string_literal", "\"my-bucket\"",   "my-bucket")]
-    #[case("\"\"",            "string_literal", "\"\"",            "")]
+    #[case("\"my-bucket\"", "string_literal", "\"my-bucket\"", "my-bucket")]
+    #[case("\"\"", "string_literal", "\"\"", "")]
     #[case("\"hello world\"", "string_literal", "\"hello world\"", "hello world")]
     fn test_string_literal_resolved(
         #[case] expr: &str,
@@ -157,14 +169,14 @@ mod tests {
 
     /// Numeric, boolean, and null literals are `Resolved` as-is.
     #[rstest]
-    #[case("42",     "decimal_integer_literal",        "42",     "42")]
-    #[case("3.14f",  "decimal_floating_point_literal", "3.14f",  "3.14f")]
-    #[case("0xFF",   "hex_integer_literal",            "0xFF",   "0xFF")]
-    #[case("0755",   "octal_integer_literal",          "0755",   "0755")]
-    #[case("0b1010", "binary_integer_literal",         "0b1010", "0b1010")]
-    #[case("true",   "true",                           "true",   "true")]
-    #[case("false",  "false",                          "false",  "false")]
-    #[case("null",   "null_literal",                   "null",   "null")]
+    #[case("42", "decimal_integer_literal", "42", "42")]
+    #[case("3.14f", "decimal_floating_point_literal", "3.14f", "3.14f")]
+    #[case("0xFF", "hex_integer_literal", "0xFF", "0xFF")]
+    #[case("0755", "octal_integer_literal", "0755", "0755")]
+    #[case("0b1010", "binary_integer_literal", "0b1010", "0b1010")]
+    #[case("true", "true", "true", "true")]
+    #[case("false", "false", "false", "false")]
+    #[case("null", "null_literal", "null", "null")]
     fn test_non_string_literal_resolved(
         #[case] expr: &str,
         #[case] kind: &str,
@@ -179,7 +191,7 @@ mod tests {
 
     /// Identifiers are `Unresolved`.
     #[rstest]
-    #[case("myVar",      "identifier", "myVar",      "myVar")]
+    #[case("myVar", "identifier", "myVar", "myVar")]
     #[case("bucketName", "identifier", "bucketName", "bucketName")]
     fn test_identifier_unresolved(
         #[case] expr: &str,
@@ -192,5 +204,4 @@ mod tests {
             ParameterValue::Unresolved(expected.to_string()),
         );
     }
-
 }

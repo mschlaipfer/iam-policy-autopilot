@@ -59,9 +59,7 @@ pub(crate) fn match_service_calls(
     result
         .calls
         .iter()
-        .filter_map(|call| {
-            match_call(call, service_index, imports_by_file)
-        })
+        .filter_map(|call| match_call(call, service_index, imports_by_file))
         .collect()
 }
 
@@ -77,9 +75,7 @@ fn match_call(
     // whose output shape has a streaming/blob payload (e.g. `getObjectAsBytes` →
     // `GetObject`).  These are not separate operations in the botocore service model, so
     // we strip the suffix before the lookup and use the stripped name in the output.
-    let lookup_name = method_name
-        .strip_suffix("AsBytes")
-        .unwrap_or(method_name);
+    let lookup_name = method_name.strip_suffix("AsBytes").unwrap_or(method_name);
     let refs = service_index.method_lookup.get(lookup_name)?;
 
     let all_services: Vec<String> = refs.iter().map(|r| r.service_name.clone()).collect();

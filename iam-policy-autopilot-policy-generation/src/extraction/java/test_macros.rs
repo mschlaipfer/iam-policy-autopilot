@@ -18,8 +18,9 @@
 ///
 /// The macro generates:
 /// - A local `ExpectedOutput` struct with `#[serde(rename_all = "PascalCase")]`
-/// - A `#[rstest]` test function that reads `.java` + `.json` pairs, runs extraction,
-///   and asserts `result.<result_field> == expected.expected_<result_field>`.
+/// - A `#[rstest]` `#[tokio::test]` async test function that reads `.java` + `.json` pairs,
+///   runs extraction via [`JavaLanguageExtractor`], and asserts
+///   `result.<result_field> == expected.expected_<result_field>`.
 ///
 /// Extraction order is deterministic (tree-sitter visits nodes in source order), so a
 /// plain `Vec` equality check is used — no sorting or set conversion.
@@ -38,12 +39,14 @@ macro_rules! java_extractor_test {
             }
 
             #[rstest::rstest]
-            fn [< test_java_ $result_field _extraction >](
+            #[tokio::test]
+            async fn [< test_java_ $result_field _extraction >](
                 #[files($glob)] java_file: std::path::PathBuf,
             ) {
                 use std::fs;
                 use $crate::{Language, SourceFile};
-                use $crate::extraction::java::extractor::JavaLanguageExtractorSet;
+                use $crate::extraction::framework::LanguageExtractor;
+                use $crate::extraction::java::JavaLanguageExtractor;
 
                 let source_code = fs::read_to_string(&java_file)
                     .unwrap_or_else(|e| panic!("Failed to read Java test file {java_file:?}: {e}"));
@@ -57,8 +60,9 @@ macro_rules! java_extractor_test {
 
                 let file_name = java_file.file_name().expect("java_file should have a file name");
                 let source = SourceFile::with_language(file_name.into(), source_code, Language::Java);
-                let result = JavaLanguageExtractorSet::default_aws_v2()
-                    .extract_from_file(&source)
+                let result = JavaLanguageExtractor
+                    .extract(vec![source])
+                    .await
                     .expect("extraction should succeed");
 
                 let test_name = java_file
@@ -133,11 +137,12 @@ macro_rules! java_extractor_test {
 /// );
 /// ```
 ///
-/// The macro generates a `#[rstest]` test function with the given name that:
+/// The macro generates a `#[rstest]` `#[tokio::test]` async test function with the given
+/// name that:
 /// 1. Reads the descriptor JSON
 /// 2. Loads the referenced service-index JSON
-/// 3. Reads and extracts all referenced `.java` source files
-/// 4. Runs [`JavaMatcher::match_calls`] on the merged extraction result
+/// 3. Reads and extracts all referenced `.java` source files via [`JavaLanguageExtractor`]
+/// 4. Runs [`JavaLanguageExtractor::match_calls`] on the merged extraction result
 /// 5. Asserts the full [`SdkMethodCall`] output (including `Metadata`) matches `ExpectedSdkCalls`
 #[macro_export]
 macro_rules! java_matcher_test {
@@ -146,14 +151,12 @@ macro_rules! java_matcher_test {
         $test_fn_name:ident
     ) => {
         #[rstest::rstest]
-        fn $test_fn_name(
-            #[files($glob)] descriptor_file: std::path::PathBuf,
-        ) {
+        #[tokio::test]
+        async fn $test_fn_name(#[files($glob)] descriptor_file: std::path::PathBuf) {
             use std::collections::HashMap;
             use std::fs;
-            use $crate::extraction::java::matcher::JavaMatcher;
-            use $crate::extraction::java::extractor::JavaLanguageExtractorSet;
-            use $crate::extraction::java::types::ExtractionResult;
+            use $crate::extraction::framework::LanguageExtractor;
+            use $crate::extraction::java::JavaLanguageExtractor;
             use $crate::extraction::sdk_model::{
                 SdkServiceDefinition, ServiceMethodRef, ServiceModelIndex,
             };
@@ -194,11 +197,14 @@ macro_rules! java_matcher_test {
                 .parent()
                 .expect("descriptor file must have a parent directory");
 
-            let descriptor_json = fs::read_to_string(&descriptor_file)
-                .unwrap_or_else(|e| panic!("[{test_name}] Failed to read descriptor {descriptor_file:?}: {e}"));
+            let descriptor_json = fs::read_to_string(&descriptor_file).unwrap_or_else(|e| {
+                panic!("[{test_name}] Failed to read descriptor {descriptor_file:?}: {e}")
+            });
 
-            let descriptor: Descriptor = serde_json::from_str(&descriptor_json)
-                .unwrap_or_else(|e| panic!("[{test_name}] Failed to parse descriptor {descriptor_file:?}: {e}"));
+            let descriptor: Descriptor =
+                serde_json::from_str(&descriptor_json).unwrap_or_else(|e| {
+                    panic!("[{test_name}] Failed to parse descriptor {descriptor_file:?}: {e}")
+                });
 
             // ── load service index ────────────────────────────────────────────
             // ServiceIndexFile is resolved relative to the crate root so that
@@ -206,11 +212,14 @@ macro_rules! java_matcher_test {
 
             let index_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join(&descriptor.service_index_file);
-            let index_json = fs::read_to_string(&index_path)
-                .unwrap_or_else(|e| panic!("[{test_name}] Failed to read service index {index_path:?}: {e}"));
+            let index_json = fs::read_to_string(&index_path).unwrap_or_else(|e| {
+                panic!("[{test_name}] Failed to read service index {index_path:?}: {e}")
+            });
 
-            let index_data: ServiceIndexJson = serde_json::from_str(&index_json)
-                .unwrap_or_else(|e| panic!("[{test_name}] Failed to parse service index {index_path:?}: {e}"));
+            let index_data: ServiceIndexJson =
+                serde_json::from_str(&index_json).unwrap_or_else(|e| {
+                    panic!("[{test_name}] Failed to parse service index {index_path:?}: {e}")
+                });
 
             let service_index = ServiceModelIndex {
                 services: index_data.services,
@@ -220,40 +229,40 @@ macro_rules! java_matcher_test {
 
             // ── extract all source files ──────────────────────────────────────
 
-            let extractor_set = JavaLanguageExtractorSet::default_aws_v2();
-            let mut merged = ExtractionResult::default();
+            let source_files: Vec<SourceFile> = descriptor
+                .source_files
+                .iter()
+                .map(|source_file_name| {
+                    let java_path = descriptor_dir.join(source_file_name);
+                    let source_code = fs::read_to_string(&java_path).unwrap_or_else(|e| {
+                        panic!("[{test_name}] Failed to read Java file {java_path:?}: {e}")
+                    });
+                    SourceFile::with_language(
+                        java_path
+                            .file_name()
+                            .expect("java file must have a name")
+                            .into(),
+                        source_code,
+                        Language::Java,
+                    )
+                })
+                .collect();
 
-            for source_file_name in &descriptor.source_files {
-                let java_path = descriptor_dir.join(source_file_name);
-                let source_code = fs::read_to_string(&java_path)
-                    .unwrap_or_else(|e| panic!("[{test_name}] Failed to read Java file {java_path:?}: {e}"));
-
-                let source = SourceFile::with_language(
-                    java_path.file_name().expect("java file must have a name").into(),
-                    source_code,
-                    Language::Java,
-                );
-
-                let partial = extractor_set
-                    .extract_from_file(&source)
-                    .unwrap_or_else(|e| panic!("[{test_name}] Extraction failed for {java_path:?}: {e}"));
-
-                merged.extend(partial);
-            }
+            let extractor = JavaLanguageExtractor;
+            let merged = extractor
+                .extract(source_files)
+                .await
+                .unwrap_or_else(|e| panic!("[{test_name}] Extraction failed: {e}"));
 
             // ── match ─────────────────────────────────────────────────────────
 
-            let matcher = JavaMatcher::new(
-                &service_index,
-                &$crate::extraction::java::extractor::JAVA_UTILITIES_MODEL,
-            );
-            let actual_calls = matcher.match_calls(&merged);
+            let utilities_model = extractor.utilities_model();
+            let actual_calls = extractor.match_calls(&merged, &service_index, utilities_model);
 
             // ── compare (full SdkMethodCall including Metadata) ───────────────
 
             assert_eq!(
-                actual_calls,
-                descriptor.expected_sdk_calls,
+                actual_calls, descriptor.expected_sdk_calls,
                 "[{test_name}] SdkMethodCall mismatch",
             );
         }

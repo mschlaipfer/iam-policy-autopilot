@@ -7,7 +7,11 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::extraction::java::extractor::{JavaNodeMatch, SdkExtractor};
+use ast_grep_core::tree_sitter::StrDoc;
+use ast_grep_core::NodeMatch;
+use ast_grep_language::Java;
+
+use crate::extraction::framework::SdkExtractor;
 use crate::extraction::java::extractors::utility_import_extractor::classify_utility_import;
 use crate::extraction::java::types::{ExtractionResult, Import, UtilityImport};
 use crate::service_configuration::load_service_configuration;
@@ -54,7 +58,9 @@ static JAVA_IMPORT_SERVICE_MAP: LazyLock<HashMap<String, String>> = LazyLock::ne
 /// this extractor's matches in the combined rule.
 pub(crate) struct JavaImportExtractor;
 
-impl SdkExtractor for JavaImportExtractor {
+impl SdkExtractor<Java> for JavaImportExtractor {
+    type ExtractionResult = ExtractionResult;
+
     fn rule_yaml(&self) -> &'static str {
         "kind: import_declaration\nhas:\n  pattern: $IMPORT_MARKER"
     }
@@ -65,7 +71,7 @@ impl SdkExtractor for JavaImportExtractor {
 
     fn process(
         &self,
-        node_match: &JavaNodeMatch<'_>,
+        node_match: &NodeMatch<'_, StrDoc<Java>>,
         source_file: &SourceFile,
         result: &mut ExtractionResult,
     ) {
@@ -154,26 +160,44 @@ mod tests {
     #[rstest]
     // Services whose Java package segment already matches the Botocore name
     #[case("software.amazon.awssdk.services.s3.S3Client", Some("s3"))]
-    #[case("software.amazon.awssdk.services.dynamodb.model.GetItemRequest", Some("dynamodb"))]
+    #[case(
+        "software.amazon.awssdk.services.dynamodb.model.GetItemRequest",
+        Some("dynamodb")
+    )]
     #[case("software.amazon.awssdk.services.sts.StsClient", Some("sts"))]
-    #[case("software.amazon.awssdk.services.s3control.S3ControlClient", Some("s3control"))]
+    #[case(
+        "software.amazon.awssdk.services.s3control.S3ControlClient",
+        Some("s3control")
+    )]
     // Services whose Java package segment is the Smithy name with dashes removed;
     // the mapping must translate them to the Botocore name.
-    #[case("software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient", Some("logs"))]
-    #[case("software.amazon.awssdk.services.elasticloadbalancing.ElasticLoadBalancingClient", Some("elb"))]
-    #[case("software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient", Some("cognito-idp"))]
+    #[case(
+        "software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient",
+        Some("logs")
+    )]
+    #[case(
+        "software.amazon.awssdk.services.elasticloadbalancing.ElasticLoadBalancingClient",
+        Some("elb")
+    )]
+    #[case(
+        "software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient",
+        Some("cognito-idp")
+    )]
     // Services whose botocore name contains dashes but have no Smithy mapping entry;
     // the auto-generated self-mapping must restore the dashes.
-    #[case("software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient", Some("bedrock-runtime"))]
-    #[case("software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest", Some("bedrock-runtime"))]
+    #[case(
+        "software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient",
+        Some("bedrock-runtime")
+    )]
+    #[case(
+        "software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest",
+        Some("bedrock-runtime")
+    )]
     // Non-AWS imports must be discarded
     #[case("java.util.List", None)]
     #[case("com.example.MyClass", None)]
     #[case("com.example.services.foo.Bar", None)]
-    fn test_extract_service_from_import(
-        #[case] import_path: &str,
-        #[case] expected: Option<&str>,
-    ) {
+    fn test_extract_service_from_import(#[case] import_path: &str, #[case] expected: Option<&str>) {
         assert_eq!(
             extract_service_from_import(import_path).as_deref(),
             expected,

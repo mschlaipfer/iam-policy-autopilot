@@ -1006,4 +1006,3 @@ mod location_tests {
         }
     }
 }
-

@@ -1,242 +1,317 @@
 //! Java extraction module — entry point for AWS SDK for Java v2 method call extraction.
 //!
-//! This module provides a **separate entry point** for Java that does not use the existing
-//! [`Extractor`] trait (used by Python/Go/JS/TS). Instead it uses the Java-specific
-//! [`JavaLanguageExtractorSet`] and [`JavaMatcher`].
+//! This module provides the [`JavaLanguageExtractor`] which implements the framework's
+//! [`LanguageExtractor`] trait.
 //!
 //! # Architecture
 //!
 //! ```text
 //! Vec<SourceFile>
 //!      ↓
-//! JavaLanguageExtractorSet   (SdkExtractor impls → ExtractionResult)
+//! JavaLanguageExtractor::extract()   [provided by LanguageExtractor framework]
 //!      ↓
-//! JavaMatcher                (ExtractionResult → Vec<SdkMethodCall>)
+//! JavaLanguageExtractor::match_calls()
 //!      ↓
 //! Vec<SdkMethodCall>
 //! ```
 //!
-//! # Entry Point
-//!
-//! ```ignore
-//! use iam_policy_autopilot_policy_generation::extraction::java::extract_java_sdk_calls;
-//! use iam_policy_autopilot_policy_generation::extraction::sdk_model::ServiceDiscovery;
-//! use iam_policy_autopilot_policy_generation::{Language, SourceFile};
-//! use std::path::PathBuf;
-//!
-//! let service_index = ServiceDiscovery::load_service_index(Language::Java).await?;
-//! let source = SourceFile::with_language(
-//!     PathBuf::from("Example.java"),
-//!     std::fs::read_to_string("Example.java")?,
-//!     Language::Java,
-//! );
-//! let calls = extract_java_sdk_calls(vec![source], &service_index).await?;
-//! ```
-//!
-//! [`Extractor`]: crate::extraction::extractor::Extractor
+//! [`LanguageExtractor`]: crate::extraction::framework::LanguageExtractor
 
-pub(crate) mod matcher;
-pub(crate) mod matchers;
-pub(crate) mod extractor;
 pub(crate) mod extractors;
+pub(crate) mod matchers;
 pub(crate) mod types;
 
 #[cfg(test)]
 pub(crate) mod test_macros;
 
-use crate::errors::{ExtractorError, Result};
-use crate::extraction::java::matcher::JavaMatcher;
-use crate::extraction::java::extractor::JavaLanguageExtractorSet;
-use crate::extraction::java::types::ExtractionResult;
-use crate::extraction::{SdkMethodCall, ServiceModelIndex, SourceFile};
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::LazyLock;
+
+use ast_grep_language::Java;
+use async_trait::async_trait;
+
+use crate::embedded_data::JavaSdkData;
+use crate::extraction::framework::{
+    LanguageExtractor, LanguageExtractorSet, SdkExtractor, UtilitiesModel, UtilityMethod,
+    UtilityOperation,
+};
+use crate::extraction::java::matchers::paginator::match_paginators;
+use crate::extraction::java::matchers::service_call::match_service_calls;
+use crate::extraction::java::matchers::utility::match_utilities;
+use crate::extraction::java::matchers::waiter::match_waiters;
+use crate::extraction::java::types::{ExtractionResult, Import, UtilityImport};
+use crate::extraction::{SdkMethodCall, ServiceModelIndex};
+
+#[cfg(test)]
+use crate::errors::ExtractorError;
 
 // ================================================================================================
-// Error type
+// Utilities model — loaded once for the entire process lifetime
 // ================================================================================================
 
-/// Errors that can occur during Java SDK method call extraction.
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum JavaExtractionError {
-    /// The source file could not be parsed by ast-grep.
-    #[error("Failed to parse Java source '{path}': {message}")]
-    ParseError {
-        /// The path of the file that failed to parse
-        path: String,
-        /// The underlying parse error message
-        message: String,
-    },
+/// The `java-sdk-v2-utilities.json` model, loaded exactly once and normalised into the
+/// shared [`UtilitiesModel`] type from the framework.
+///
+/// Both the import-classification table (used during AST extraction) and
+/// [`JavaLanguageExtractor::match_calls`] (used during matching) share this single instance,
+/// so the embedded JSON is parsed only once regardless of how many files are processed.
+///
+/// # Panics
+///
+/// Panics on first access if the embedded JSON is missing or malformed.  Both
+/// conditions indicate a corrupt binary and are unrecoverable.
+pub(crate) static JAVA_UTILITIES_MODEL: LazyLock<UtilitiesModel> = LazyLock::new(|| {
+    // The java-sdk-v2-utilities.json has a different schema from the framework's
+    // UtilitiesModel. We normalise it here at load time.
+    //
+    // Java JSON schema:
+    // {
+    //   "Services": {
+    //     "<service>": {
+    //       "<feature_name>": {
+    //         "MethodName": "...",
+    //         "ReceiverClass": "...",
+    //         "Import": "...",
+    //         "Operations": [{ "Service": "...", "Name": "..." }]
+    //       }
+    //     }
+    //   }
+    // }
+    //
+    // Framework UtilitiesModel schema:
+    // {
+    //   services: HashMap<service_name, HashMap<method_name, UtilityMethod>>
+    // }
+    //
+    // Normalisation: use MethodName as the method key, map Operations to UtilityOperation.
 
-    /// A source file was passed that is not a Java file.
-    #[error("Source file is not Java: {path}")]
-    NotJavaFile {
-        /// The path of the non-Java file
-        path: String,
-    },
-}
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct JavaUtilityOperationRaw {
+        service: String,
+        name: String,
+    }
 
-impl From<JavaExtractionError> for ExtractorError {
-    fn from(e: JavaExtractionError) -> Self {
-        match e {
-            JavaExtractionError::NotJavaFile { path } => ExtractorError::method_extraction(
-                "java",
-                std::path::PathBuf::from(&path),
-                format!("Source file is not Java: {path}"),
-            ),
-            JavaExtractionError::ParseError { path, message } => ExtractorError::method_extraction(
-                "java",
-                std::path::PathBuf::from(&path),
-                message,
-            ),
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct JavaUtilityFeatureRaw {
+        method_name: String,
+        #[allow(dead_code)]
+        receiver_class: String,
+        #[allow(dead_code)]
+        import: String,
+        operations: Vec<JavaUtilityOperationRaw>,
+    }
+
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct JavaUtilitiesModelRaw {
+        services: std::collections::HashMap<
+            String,
+            std::collections::HashMap<String, JavaUtilityFeatureRaw>,
+        >,
+    }
+
+    let data = JavaSdkData::get_utilities_model()
+        .expect("java-sdk-v2-utilities.json must be present in embedded data");
+    let raw: JavaUtilitiesModelRaw =
+        serde_json::from_slice(&data).expect("java-sdk-v2-utilities.json must be valid JSON");
+
+    // Normalise: service_name → method_name → UtilityMethod
+    let services = raw
+        .services
+        .into_iter()
+        .map(|(service_name, features)| {
+            let methods = features
+                .into_values()
+                .map(|feature| {
+                    let method = UtilityMethod {
+                        operations: feature
+                            .operations
+                            .into_iter()
+                            .map(|op| UtilityOperation {
+                                service: op.service,
+                                name: op.name,
+                            })
+                            .collect(),
+                        receiver_class: Some(feature.receiver_class),
+                        import_prefix: Some(feature.import),
+                    };
+                    (feature.method_name, method)
+                })
+                .collect();
+            (service_name, methods)
+        })
+        .collect();
+
+    UtilitiesModel { services }
+});
+
+// ================================================================================================
+// JavaLanguageExtractor — implements the framework LanguageExtractor trait
+// ================================================================================================
+
+/// The Java language extractor.
+///
+/// Implements [`LanguageExtractor`] for AWS SDK for Java v2. Stateless — all runtime
+/// data (`ServiceModelIndex`, `UtilitiesModel`) is passed to [`match_calls`] by the engine.
+///
+/// [`LanguageExtractor`]: crate::extraction::framework::LanguageExtractor
+/// [`match_calls`]: JavaLanguageExtractor::match_calls
+pub(crate) struct JavaLanguageExtractor;
+
+#[async_trait]
+impl LanguageExtractor for JavaLanguageExtractor {
+    type Language = Java;
+    type ExtractionResult = ExtractionResult;
+
+    fn extractor_set(&self) -> LanguageExtractorSet<Java, ExtractionResult> {
+        use crate::extraction::java::extractors::import_extractor::JavaImportExtractor;
+        use crate::extraction::java::extractors::method_extractor::JavaMethodCallExtractor;
+        use crate::extraction::java::extractors::paginator_extractor::JavaPaginatorExtractor;
+        use crate::extraction::java::extractors::waiter_extractor::JavaWaiterCallExtractor;
+
+        LanguageExtractorSet::new(
+            Java,
+            vec![
+                Box::new(JavaImportExtractor)
+                    as Box<dyn SdkExtractor<Java, ExtractionResult = ExtractionResult>>,
+                Box::new(JavaPaginatorExtractor),
+                Box::new(JavaWaiterCallExtractor),
+                Box::new(JavaMethodCallExtractor),
+            ],
+        )
+        .expect("default_aws_v2 extractor labels must be unique")
+    }
+
+    fn utilities_model(&self) -> Option<&'static UtilitiesModel> {
+        Some(&JAVA_UTILITIES_MODEL)
+    }
+
+    /// Phase 2 — convert the [`ExtractionResult`] IR into validated [`SdkMethodCall`]s.
+    ///
+    /// Builds a per-file import index (Java requires per-file import scoping), then
+    /// delegates to the four focused sub-matchers in order:
+    /// service calls → waiters → paginators → utilities.
+    fn match_calls(
+        &self,
+        ir: &ExtractionResult,
+        service_index: &ServiceModelIndex,
+        utilities_model: Option<&UtilitiesModel>,
+    ) -> Vec<SdkMethodCall> {
+        // Build per-file full-import index:
+        //   file_path → list of all Import records in that file
+        //
+        // In Java every file must declare its own imports, so we must not share imports
+        // across files when filtering candidates for a given call.
+        let mut imports_by_file: HashMap<PathBuf, Vec<&Import>> = HashMap::new();
+        for imp in &ir.imports {
+            imports_by_file
+                .entry(imp.location.file_path.clone())
+                .or_default()
+                .push(imp);
         }
-    }
-}
 
-// ================================================================================================
-// Entry point
-// ================================================================================================
+        // Build per-file utility-import index:
+        //   file_path → list of utility imports in that file
+        let mut utility_imports_by_file: HashMap<PathBuf, Vec<&UtilityImport>> = HashMap::new();
+        for ui in &ir.utility_imports {
+            utility_imports_by_file
+                .entry(ui.location.file_path.clone())
+                .or_default()
+                .push(ui);
+        }
 
-/// Extract AWS SDK method calls from one or more Java source files.
-///
-/// This is the primary entry point for Java extraction. It does **not** use the
-/// existing [`Extractor`] trait (used by Python/Go/JS/TS). Instead it uses the
-/// Java-specific [`JavaLanguageExtractorSet`] and [`JavaMatcher`].
-///
-/// # Arguments
-/// * `source_files` - One or more Java [`SourceFile`] values to analyze. All files must
-///   have [`Language::Java`] set.
-/// * `service_index` - Pre-loaded SDK service index (build with
-///   [`ServiceDiscovery::load_service_index`] using [`Language::Java`]).
-///
-/// # Returns
-/// All matched SDK method calls across all input files, as a flat [`Vec<SdkMethodCall>`].
-///
-/// # Errors
-/// - [`ExtractorError::Validation`] if `source_files` is empty.
-/// - [`ExtractorError::MethodExtraction`] if any file is not Java or ast-grep fails to parse a file.
-///
-/// [`Extractor`]: crate::extraction::extractor::Extractor
-/// [`Language::Java`]: crate::Language::Java
-/// [`ServiceDiscovery::load_service_index`]: crate::extraction::sdk_model::ServiceDiscovery::load_service_index
-pub(crate) async fn extract_java_sdk_calls(
-    source_files: Vec<SourceFile>,
-    service_index: &ServiceModelIndex,
-) -> Result<Vec<SdkMethodCall>> {
-    if source_files.is_empty() {
-        return Err(ExtractorError::validation("No source files provided"));
+        let mut output = Vec::new();
+
+        output.extend(match_service_calls(ir, service_index, &imports_by_file));
+        output.extend(match_waiters(ir, service_index, &imports_by_file));
+        output.extend(match_paginators(ir, service_index, &imports_by_file));
+
+        // Only run utility matching if a utilities model is available.
+        if let Some(model) = utilities_model {
+            output.extend(match_utilities(
+                ir,
+                model,
+                service_index,
+                &utility_imports_by_file,
+            ));
+        }
+
+        output
     }
 
-    // Phase 1 — parallel AST extraction (CPU-bound).
-    //
-    // Each file is processed on a blocking thread via `spawn_blocking`.  The
-    // `JavaLanguageExtractorSet` is stateless (all extractors are pure functions
-    // over the AST), so it is cheap to construct per task.  `SourceFile` is
-    // `Send + 'static` (owned `String` content + `PathBuf`), so it can be moved
-    // into the closure without cloning the service index.
-    let mut join_set: tokio::task::JoinSet<Result<ExtractionResult>> =
-        tokio::task::JoinSet::new();
-
-    for source_file in source_files {
-        join_set.spawn_blocking(move || {
-            log::debug!(
-                "Java extraction: processing file '{}'",
-                source_file.path.display()
-            );
-
-            let extractor_set = JavaLanguageExtractorSet::default_aws_v2();
-            let extraction_result = extractor_set.extract_from_file(&source_file)?;
-
-            log::debug!(
-                "Java extraction: found {} imports, {} calls, {} waiters, {} paginators",
-                extraction_result.imports.len(),
-                extraction_result.calls.len(),
-                extraction_result.waiters.len(),
-                extraction_result.paginators.len(),
-            );
-
-            Ok(extraction_result)
-        });
-    }
-
-    // Collect and merge results into a single ExtractionResult, propagating the first error encountered.
-    //
-    // Merging is safe because ExtractionResult carries per-item Location values (including
-    // file_path), so the matcher can still build its per-file import indexes correctly
-    // even when all files are combined into one value.
-    let mut extraction_result = ExtractionResult::default();
-    while let Some(join_result) = join_set.join_next().await {
-        // `JoinError` means the blocking task panicked — treat as a parse error.
-        let file_result = join_result.map_err(|e| {
-            ExtractorError::method_extraction(
-                "java",
-                std::path::PathBuf::from("unknown"),
-                format!("Extraction task panicked: {e}"),
-            )
-        })??;
-        extraction_result.extend(file_result);
-    }
-
-    // Phase 2 — sequential matching (cheap HashMap lookups, borrows service_index).
-    //
-    // The matcher builds per-file import indexes from the Location embedded in each
-    // item, so passing the merged result produces the same filtering as processing files
-    // individually.
-    let matcher = JavaMatcher::new(
-        service_index,
-        &crate::extraction::java::extractor::JAVA_UTILITIES_MODEL,
-    );
-    let all_calls = matcher.match_calls(&extraction_result);
-
-    log::debug!(
-        "Java extraction: matched {} SDK method calls across all files",
-        all_calls.len(),
-    );
-
-    Ok(all_calls)
+    // extract() is NOT overridden — the framework default handles the parallel pipeline
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::extraction::framework::LanguageExtractor;
+    use crate::extraction::java::matchers::apply_import_filter;
     use crate::extraction::sdk_model::{SdkServiceDefinition, ServiceMethodRef, ServiceModelIndex};
     use crate::{Language, SdkMethodCall, SourceFile};
-    use std::collections::HashMap;
+    use rstest::rstest;
+    use std::collections::{HashMap, HashSet};
     use std::path::PathBuf;
+
+    // ── import-filter unit tests (pure, no file I/O) ──────────────────────────
+
+    /// Parameterized test for `apply_import_filter`.
+    #[rstest]
+    #[case(vec!["s3", "s3control"], vec!["s3"], vec!["s3"], "should narrow to s3 when only s3 is imported")]
+    #[case(vec!["s3", "dynamodb"], vec![], vec!["s3", "dynamodb"], "empty import set should pass all services through")]
+    #[case(vec!["s3"], vec!["dynamodb"], vec![], "no match returns empty — caller must not emit SdkMethodCall")]
+    #[case(vec!["s3", "dynamodb", "sqs"], vec!["dynamodb", "sqs"], vec!["dynamodb", "sqs"], "should narrow to dynamodb and sqs")]
+    fn test_apply_import_filter(
+        #[case] services: Vec<&str>,
+        #[case] imported: Vec<&str>,
+        #[case] expected: Vec<&str>,
+        #[case] msg: &str,
+    ) {
+        let services: Vec<String> = services.into_iter().map(str::to_string).collect();
+        let imported: HashSet<String> = imported.into_iter().map(str::to_string).collect();
+        let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
+
+        let filtered = apply_import_filter(services, &imported);
+        assert_eq!(filtered, expected, "{msg}");
+    }
+
+    // ── file-driven orchestrator integration tests ────────────────────────────
+
+    crate::java_matcher_test!(
+        "tests/java/matchers/orchestrator/*.json",
+        test_orchestrator_matching
+    );
 
     // ── error cases ───────────────────────────────────────────────────────────
     //
-    // These two cases exercise error paths that cannot be expressed as descriptor
-    // files (empty input and non-Java file), so they remain as inline tests.
+    // These cases exercise error paths that cannot be expressed as descriptor
+    // files, so they remain as inline tests.
 
     #[tokio::test]
-    async fn test_extract_java_sdk_calls_empty_input() {
-        let index = ServiceModelIndex {
-            services: HashMap::new(),
-            method_lookup: HashMap::new(),
-            waiter_lookup: HashMap::new(),
-        };
-        let result = extract_java_sdk_calls(vec![], &index).await;
-        assert!(
-            matches!(result, Err(ExtractorError::Validation { .. })),
-            "empty input should return Validation error"
-        );
+    async fn test_extract_empty_input() {
+        // Empty input is valid — the framework returns Ok with an empty IR.
+        let extractor = JavaLanguageExtractor;
+        let result = extractor.extract(vec![]).await;
+        assert!(result.is_ok(), "empty input should succeed with empty IR");
     }
 
     #[tokio::test]
-    async fn test_extract_java_sdk_calls_not_java_file() {
-        let index = ServiceModelIndex {
-            services: HashMap::new(),
-            method_lookup: HashMap::new(),
-            waiter_lookup: HashMap::new(),
-        };
+    async fn test_extract_not_java_file() {
+        // Passing a non-Java file to the Java extractor is a caller error.
+        // The framework detects the language mismatch and returns MethodExtraction.
         let source = SourceFile::with_language(
             PathBuf::from("test.py"),
             "s3_client.put_object()".to_string(),
             Language::Python,
         );
-        let result = extract_java_sdk_calls(vec![source], &index).await;
+        let extractor = JavaLanguageExtractor;
+        let result = extractor.extract(vec![source]).await;
         assert!(
             matches!(result, Err(ExtractorError::MethodExtraction { .. })),
-            "Python file should return MethodExtraction error"
+            "Python file passed to Java extractor should return MethodExtraction error"
         );
     }
 
@@ -244,15 +319,12 @@ mod tests {
     //
     // Each descriptor JSON in tests/java/entry_point/ specifies one or more Java
     // source files, a service index, and the expected SDK calls (full SdkMethodCall
-    // including Metadata).  The test calls `extract_java_sdk_calls` — the real async
-    // entry point — so the full extraction + merge + matching pipeline is exercised
-    // end-to-end.
+    // including Metadata).  The test exercises the full extraction + merge + matching
+    // pipeline end-to-end via JavaLanguageExtractor.
 
     #[rstest::rstest]
     #[tokio::test]
-    async fn test_entry_point(
-        #[files("tests/java/entry_point/*.json")] descriptor_file: PathBuf,
-    ) {
+    async fn test_entry_point(#[files("tests/java/entry_point/*.json")] descriptor_file: PathBuf) {
         #[derive(Debug, serde::Deserialize)]
         #[serde(rename_all = "PascalCase")]
         struct Descriptor {
@@ -282,16 +354,21 @@ mod tests {
             .parent()
             .expect("descriptor file must have a parent directory");
 
-        let descriptor_json = std::fs::read_to_string(&descriptor_file)
-            .unwrap_or_else(|e| panic!("[{test_name}] Failed to read descriptor {descriptor_file:?}: {e}"));
-        let descriptor: Descriptor = serde_json::from_str(&descriptor_json)
-            .unwrap_or_else(|e| panic!("[{test_name}] Failed to parse descriptor {descriptor_file:?}: {e}"));
+        let descriptor_json = std::fs::read_to_string(&descriptor_file).unwrap_or_else(|e| {
+            panic!("[{test_name}] Failed to read descriptor {descriptor_file:?}: {e}")
+        });
+        let descriptor: Descriptor = serde_json::from_str(&descriptor_json).unwrap_or_else(|e| {
+            panic!("[{test_name}] Failed to parse descriptor {descriptor_file:?}: {e}")
+        });
 
-        let index_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(&descriptor.service_index_file);
-        let index_json = std::fs::read_to_string(&index_path)
-            .unwrap_or_else(|e| panic!("[{test_name}] Failed to read service index {index_path:?}: {e}"));
-        let index_data: ServiceIndexJson = serde_json::from_str(&index_json)
-            .unwrap_or_else(|e| panic!("[{test_name}] Failed to parse service index {index_path:?}: {e}"));
+        let index_path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(&descriptor.service_index_file);
+        let index_json = std::fs::read_to_string(&index_path).unwrap_or_else(|e| {
+            panic!("[{test_name}] Failed to read service index {index_path:?}: {e}")
+        });
+        let index_data: ServiceIndexJson = serde_json::from_str(&index_json).unwrap_or_else(|e| {
+            panic!("[{test_name}] Failed to parse service index {index_path:?}: {e}")
+        });
 
         let service_index = ServiceModelIndex {
             services: index_data.services,
@@ -304,24 +381,66 @@ mod tests {
             .iter()
             .map(|name| {
                 let java_path = descriptor_dir.join(name);
-                let source_code = std::fs::read_to_string(&java_path)
-                    .unwrap_or_else(|e| panic!("[{test_name}] Failed to read Java file {java_path:?}: {e}"));
+                let source_code = std::fs::read_to_string(&java_path).unwrap_or_else(|e| {
+                    panic!("[{test_name}] Failed to read Java file {java_path:?}: {e}")
+                });
                 SourceFile::with_language(
-                    java_path.file_name().expect("java file must have a name").into(),
+                    java_path
+                        .file_name()
+                        .expect("java file must have a name")
+                        .into(),
                     source_code,
                     Language::Java,
                 )
             })
             .collect();
 
-        let actual_calls = extract_java_sdk_calls(source_files, &service_index)
+        let extractor = JavaLanguageExtractor;
+        let ir = extractor
+            .extract(source_files)
             .await
-            .unwrap_or_else(|e| panic!("[{test_name}] extract_java_sdk_calls failed: {e}"));
+            .unwrap_or_else(|e| panic!("[{test_name}] extract failed: {e}"));
+        let utilities_model = extractor.utilities_model();
+        let actual_calls = extractor.match_calls(&ir, &service_index, utilities_model);
 
         assert_eq!(
-            actual_calls,
-            descriptor.expected_sdk_calls,
+            actual_calls, descriptor.expected_sdk_calls,
             "[{test_name}] SdkMethodCall mismatch",
         );
+    }
+
+    // ── extractor infrastructure tests ───────────────────────────────────────
+
+    #[test]
+    fn test_combined_rule_builds_without_error() {
+        let extractor = JavaLanguageExtractor;
+        let yaml = extractor.extractor_set().build_combined_rule();
+        assert!(yaml.contains("any:"), "combined rule should contain any:");
+        assert!(
+            yaml.contains("Java_combined"),
+            "combined rule should have id"
+        );
+    }
+
+    #[rstest::rstest]
+    #[tokio::test]
+    async fn test_extract_imports_and_calls_single_pass(
+        #[files("tests/java/extractors/extractor/imports_and_calls_single_pass.java")]
+        java_file: PathBuf,
+    ) {
+        let source_code = std::fs::read_to_string(&java_file)
+            .unwrap_or_else(|e| panic!("Failed to read {java_file:?}: {e}"));
+        let source = SourceFile::with_language(
+            java_file.file_name().expect("must have file name").into(),
+            source_code,
+            Language::Java,
+        );
+        let extractor = JavaLanguageExtractor;
+        let result = extractor
+            .extract(vec![source])
+            .await
+            .expect("should succeed");
+        assert!(!result.imports.is_empty(), "should find imports");
+        assert!(!result.calls.is_empty(), "should find method calls");
     }
 }

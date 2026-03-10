@@ -10,52 +10,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::extraction::framework::UtilitiesModel;
 use crate::extraction::java::types::{ExtractionResult, UtilityImport};
 use crate::extraction::{SdkMethodCall, SdkMethodCallMetadata, ServiceModelIndex};
 
 // ================================================================================================
-// Utility model types (mirrors java-sdk-v2-utilities.json)
-// ================================================================================================
-
-/// An operation reference in `java-sdk-v2-utilities.json`.
-///
-/// Stored as `{ "Service": "s3", "Name": "PutObject" }` — the enrichment phase
-/// resolves these to IAM actions via the service model.
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub(crate) struct JavaUtilityOperation {
-    /// Service identifier, e.g. `"s3"`, `"sqs"`
-    pub(crate) service: String,
-    /// API operation name (PascalCase), e.g. `"PutObject"`, `"SendMessageBatch"`
-    pub(crate) name: String,
-}
-
-/// A single utility feature entry from `java-sdk-v2-utilities.json`.
-// `import` and `operations` are deserialized from JSON and stored for future use
-// (e.g. policy generation); they are not yet consumed by the matching logic.
-#[allow(dead_code)]
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub(crate) struct JavaUtilityFeature {
-    /// SDK method name, e.g. `"uploadFile"`
-    pub(crate) method_name: String,
-    /// Receiver class name, e.g. `"S3TransferManager"`
-    pub(crate) receiver_class: String,
-    /// Import package prefix, e.g. `"software.amazon.awssdk.transfer.s3"`
-    pub(crate) import: String,
-    /// API operations this utility call requires (resolved to IAM actions by the enrichment phase)
-    pub(crate) operations: Vec<JavaUtilityOperation>,
-}
-
-/// Top-level structure of `java-sdk-v2-utilities.json`.
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub(crate) struct JavaUtilitiesModel {
-    pub(crate) services: HashMap<String, HashMap<String, JavaUtilityFeature>>,
-}
-
-// ================================================================================================
-// UtilityMatcher
+// match_utilities
 // ================================================================================================
 
 /// Match utility calls from an [`ExtractionResult`] using the
@@ -63,12 +23,12 @@ pub(crate) struct JavaUtilitiesModel {
 ///
 /// For each [`Call`] in `result.calls`, checks whether the receiver's class
 /// (resolved via `utility_imports` **from the same source file**) matches a
-/// `ReceiverClass` in the model, and whether the method name matches a `MethodName`.
+/// `receiver_class` in the model, and whether the method name matches a `MethodName`.
 /// If both match, emits one [`SdkMethodCall`] **per operation** listed in the feature,
 /// using the operation's `Name` (PascalCase API operation name) and `Service`.
 pub(crate) fn match_utilities(
     result: &ExtractionResult,
-    model: &JavaUtilitiesModel,
+    model: &UtilitiesModel,
     _service_index: &ServiceModelIndex,
     utility_imports_by_file: &HashMap<PathBuf, Vec<&UtilityImport>>,
 ) -> Vec<SdkMethodCall> {
@@ -91,33 +51,41 @@ pub(crate) fn match_utilities(
             .find(|ui| receiver == &ui.class_name)
             .map(|ui| ui.class_name.as_str());
 
-        // For each service in the model, look for a feature whose ReceiverClass matches
+        // For each service in the model, look for a feature whose receiver_class matches
         // either the matched_class or any utility import class in the same file, and whose
-        // MethodName matches the call method.
-        for (_service_name, features) in &model.services {
-            for (_feature_name, feature) in features {
+        // method_name matches the call method.
+        for (_service_name, methods) in &model.services {
+            for (method_name, utility_method) in methods {
                 // Check method name matches
-                if feature.method_name != call.method {
+                if method_name != &call.method {
                     continue;
                 }
 
-                // Check receiver class matches:
-                // - direct class name match (e.g. receiver == "S3TransferManager")
-                // - OR a utility import with this class_name exists in the same file
-                let class_imported = file_utility_imports
-                    .iter()
-                    .any(|ui| ui.class_name == feature.receiver_class);
+                // Check receiver class matches using the receiver_class field stored in
+                // the UtilityMethod (populated during normalisation from the Java JSON).
+                let receiver_matches = match &utility_method.receiver_class {
+                    Some(expected_class) => {
+                        // Check if the expected receiver class is imported in this file
+                        let class_imported = file_utility_imports
+                            .iter()
+                            .any(|ui| &ui.class_name == expected_class);
 
-                let receiver_matches = matched_class == Some(feature.receiver_class.as_str())
-                    || class_imported;
+                        // Match if:
+                        // - direct class name match (receiver var name == class name), OR
+                        // - the expected class is imported in the same file
+                        matched_class == Some(expected_class.as_str()) || class_imported
+                    }
+                    // No receiver class constraint — match on method name alone.
+                    // This is the case for languages that don't use class-based dispatch.
+                    None => !file_utility_imports.is_empty(),
+                };
 
                 if !receiver_matches {
                     continue;
                 }
 
-                // Emit one SdkMethodCall per operation in the feature, using the
-                // operation's API name (PascalCase) and service from the model.
-                for op in &feature.operations {
+                // Emit one SdkMethodCall per operation in the utility method.
+                for op in &utility_method.operations {
                     let metadata =
                         SdkMethodCallMetadata::new(call.expr.clone(), call.location.clone())
                             .with_parameters(call.parameters.clone())
@@ -140,8 +108,5 @@ pub(crate) fn match_utilities(
 mod tests {
     use crate::java_matcher_test;
 
-    java_matcher_test!(
-        "tests/java/matchers/utility/*.json",
-        test_utility_matching
-    );
+    java_matcher_test!("tests/java/matchers/utility/*.json", test_utility_matching);
 }

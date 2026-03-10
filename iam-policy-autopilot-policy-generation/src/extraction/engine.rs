@@ -13,7 +13,8 @@ use tokio::task::JoinSet;
 
 use crate::errors::{ExtractorError, Result};
 use crate::extraction::extractor::Extractor;
-use crate::extraction::java::extract_java_sdk_calls;
+use crate::extraction::framework::LanguageExtractor;
+use crate::extraction::java::JavaLanguageExtractor;
 use crate::extraction::sdk_model::ServiceDiscovery;
 use crate::extraction::{self, ExtractedMethods, ExtractionMetadata, SourceFile};
 use crate::Language;
@@ -75,94 +76,100 @@ impl Engine {
             service_index.method_lookup.len()
         );
 
-        // Java uses a separate entry point that does not go through the legacy Extractor trait.
-        if language == Language::Java {
-            let mut metadata = ExtractionMetadata::new(source_files.clone(), Vec::new());
+        // Dispatch to the appropriate language extractor.
+        // Languages that implement LanguageExtractor use the generic `run` helper.
+        // Legacy languages (Python, Go, JS, TS) use the old Extractor trait path.
+        match language {
+            Language::Java => {
+                let mut metadata = ExtractionMetadata::new(source_files.clone(), Vec::new());
+                let method_calls =
+                    run(&JavaLanguageExtractor, source_files, &service_index).await?;
+                metadata.update_method_count(method_calls.len());
 
-            let method_calls = extract_java_sdk_calls(source_files, &service_index).await?;
+                let total_duration = start_time.elapsed();
+                log::debug!(
+                    "Java SDK method call extraction completed in {:.2}ms: {} validated SDK methods found",
+                    total_duration.as_secs_f64() * 1000.0,
+                    method_calls.len()
+                );
 
-            metadata.update_method_count(method_calls.len());
-
-            let total_duration = start_time.elapsed();
-            log::debug!(
-                "Java SDK method call extraction completed in {:.2}ms: {} validated SDK methods found",
-                total_duration.as_secs_f64() * 1000.0,
-                method_calls.len()
-            );
-
-            return Ok(ExtractedMethods {
-                methods: method_calls,
-                metadata,
-            });
-        }
-
-        #[allow(unreachable_patterns)]
-        let extractor: Arc<dyn Extractor + Send + Sync> = match language {
-            Language::Python => Arc::new(extraction::python::extractor::PythonExtractor::new()),
-            Language::Go => Arc::new(extraction::go::extractor::GoExtractor::new()),
-            Language::JavaScript => {
-                Arc::new(extraction::javascript::extractor::JavaScriptExtractor::new())
+                Ok(ExtractedMethods {
+                    methods: method_calls,
+                    metadata,
+                })
             }
-            Language::TypeScript => {
-                Arc::new(extraction::typescript::extractor::TypeScriptExtractor::new())
-            }
-            _ => return Err(ExtractorError::unsupported_language_override(language)),
-        };
+            _ => {
+                #[allow(unreachable_patterns)]
+                let extractor: Arc<dyn Extractor + Send + Sync> = match language {
+                    Language::Python => {
+                        Arc::new(extraction::python::extractor::PythonExtractor::new())
+                    }
+                    Language::Go => Arc::new(extraction::go::extractor::GoExtractor::new()),
+                    Language::JavaScript => {
+                        Arc::new(extraction::javascript::extractor::JavaScriptExtractor::new())
+                    }
+                    Language::TypeScript => {
+                        Arc::new(extraction::typescript::extractor::TypeScriptExtractor::new())
+                    }
+                    _ => return Err(ExtractorError::unsupported_language_override(language)),
+                };
 
-        // Initialize metadata with loaded files
-        let mut metadata = ExtractionMetadata::new(source_files.clone(), Vec::new());
+                // Initialize metadata with loaded files
+                let mut metadata = ExtractionMetadata::new(source_files.clone(), Vec::new());
 
-        // Extract SDK method calls from all source files concurrently
-        let mut all_extraction_results = Vec::new();
-        let mut join_set = JoinSet::new();
+                // Extract SDK method calls from all source files concurrently
+                let mut all_extraction_results = Vec::new();
+                let mut join_set = JoinSet::new();
 
-        for source_file in source_files {
-            let extractor = extractor.clone();
-            join_set.spawn(async move { extractor.parse(&source_file).await });
-        }
-
-        // Collect results from concurrent tasks
-        while let Some(result) = join_set.join_next().await {
-            match result {
-                Ok(extraction_result) => {
-                    all_extraction_results.push(extraction_result);
+                for source_file in source_files {
+                    let extractor = extractor.clone();
+                    join_set.spawn(async move { extractor.parse(&source_file).await });
                 }
-                Err(e) => {
-                    // Task join error - this is more serious
-                    return Err(ExtractorError::method_extraction(
-                        "unsupported",
-                        PathBuf::from("unknown"),
-                        format!("Task execution failed: {e}"),
-                    ));
+
+                // Collect results from concurrent tasks
+                while let Some(result) = join_set.join_next().await {
+                    match result {
+                        Ok(extraction_result) => {
+                            all_extraction_results.push(extraction_result);
+                        }
+                        Err(e) => {
+                            // Task join error - this is more serious
+                            return Err(ExtractorError::method_extraction(
+                                "unsupported",
+                                PathBuf::from("unknown"),
+                                format!("Task execution failed: {e}"),
+                            ));
+                        }
+                    }
                 }
+
+                extractor.filter_map(&mut all_extraction_results, &service_index);
+
+                // Disambiguate and validate method calls against SDK definitions
+                extractor.disambiguate(&mut all_extraction_results, &service_index);
+
+                let method_calls: Vec<crate::SdkMethodCall> = all_extraction_results
+                    .into_iter()
+                    .flat_map(super::extractor::ExtractorResult::method_calls)
+                    .collect::<Vec<_>>();
+
+                // Update metadata with final method count
+                metadata.update_method_count(method_calls.len());
+
+                let total_duration = start_time.elapsed();
+                log::debug!(
+                    "SDK method call extraction completed in {:.2}ms: {} validated SDK methods found",
+                    total_duration.as_secs_f64() * 1000.0,
+                    method_calls.len()
+                );
+
+                // Create final results
+                Ok(ExtractedMethods {
+                    methods: method_calls,
+                    metadata,
+                })
             }
         }
-
-        extractor.filter_map(&mut all_extraction_results, &service_index);
-
-        // Disambiguate and validate method calls against SDK definitions
-        extractor.disambiguate(&mut all_extraction_results, &service_index);
-
-        let method_calls: Vec<crate::SdkMethodCall> = all_extraction_results
-            .into_iter()
-            .flat_map(super::extractor::ExtractorResult::method_calls)
-            .collect::<Vec<_>>();
-
-        // Update metadata with final method count
-        metadata.update_method_count(method_calls.len());
-
-        let total_duration = start_time.elapsed();
-        log::debug!(
-            "SDK method call extraction completed in {:.2}ms: {} validated SDK methods found",
-            total_duration.as_secs_f64() * 1000.0,
-            method_calls.len()
-        );
-
-        // Create final results
-        Ok(ExtractedMethods {
-            methods: method_calls,
-            metadata,
-        })
     }
 
     /// Detect and validate language consistency across multiple source files.
@@ -210,6 +217,33 @@ impl Engine {
             .next()
             .expect("Should have detected exactly one language"))
     }
+}
+
+// ================================================================================================
+// Generic run helper for LanguageExtractor implementations
+// ================================================================================================
+
+/// Run the two-phase extraction pipeline for a [`LanguageExtractor`] implementation.
+///
+/// This is the generic entry point used by the engine's `match` dispatch. The compiler
+/// monomorphises this function for each language at compile time; no dynamic dispatch
+/// or type erasure is needed.
+///
+/// # Phase 1 — `extractor.extract(source_files)`
+/// Fans out across files using `spawn_blocking`, merges per-file IR values, and returns
+/// the combined intermediate representation.
+///
+/// # Phase 2 — `extractor.match_calls(&ir, service_index, utilities)`
+/// Converts the IR into validated `Vec<SdkMethodCall>` by consulting the service index
+/// and utility model.
+async fn run<E: LanguageExtractor>(
+    extractor: &E,
+    source_files: Vec<SourceFile>,
+    service_index: &crate::extraction::ServiceModelIndex,
+) -> Result<Vec<crate::SdkMethodCall>> {
+    let ir = extractor.extract(source_files).await?;
+    let utilities = extractor.utilities_model();
+    Ok(extractor.match_calls(&ir, service_index, utilities))
 }
 
 #[cfg(test)]

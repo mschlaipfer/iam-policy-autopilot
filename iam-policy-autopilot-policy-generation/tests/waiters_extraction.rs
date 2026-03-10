@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use iam_policy_autopilot_policy_generation::{
-    Language,
     api::{extract_sdk_calls, model::ExtractSdkCallsConfig},
+    Language,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -614,15 +614,18 @@ class WaiterTest {{
 
         // Test pattern 0: $CLIENT.get_waiter($NAME) (no wait call)
         let code_pattern0 = self.generate_python_code_pattern0();
-        self.test_language("Python", "py", code_pattern0, &expected).await;
+        self.test_language("Python", "py", code_pattern0, &expected)
+            .await;
 
         // Test pattern 1: $WAITER.wait($$$ARGS)
         let code_pattern1 = self.generate_python_code_pattern1();
-        self.test_language("Python", "py", code_pattern1, &expected).await;
+        self.test_language("Python", "py", code_pattern1, &expected)
+            .await;
 
         // Test pattern 2: $CLIENT.get_waiter($NAME $$$WAITER_ARGS).wait($$$WAIT_ARGS)
         let code_pattern2 = self.generate_python_code_pattern2();
-        self.test_language("Python", "py", code_pattern2, &expected).await;
+        self.test_language("Python", "py", code_pattern2, &expected)
+            .await;
     }
 
     /// Test Go program with both patterns.
@@ -633,11 +636,13 @@ class WaiterTest {{
 
         // Test pattern with wait call
         let code_with_wait = self.generate_go_code_with_wait();
-        self.test_language("Go", "go", code_with_wait, expected).await;
+        self.test_language("Go", "go", code_with_wait, expected)
+            .await;
 
         // Test pattern without wait call (just waiter creation)
         let code_without_wait = self.generate_go_code_without_wait();
-        self.test_language("Go", "go", code_without_wait, expected).await;
+        self.test_language("Go", "go", code_without_wait, expected)
+            .await;
     }
 
     /// Test JavaScript program.
@@ -645,7 +650,8 @@ class WaiterTest {{
     /// JavaScript extracts the underlying operation in PascalCase (e.g. `"DescribeTable"`).
     async fn test_javascript(&self) {
         let code = self.generate_javascript_code();
-        self.test_language("JavaScript", "js", code, &self.waiter.operation).await;
+        self.test_language("JavaScript", "js", code, &self.waiter.operation)
+            .await;
     }
 
     /// Test TypeScript program.
@@ -653,7 +659,8 @@ class WaiterTest {{
     /// TypeScript extracts the underlying operation in PascalCase (e.g. `"DescribeTable"`).
     async fn test_typescript(&self) {
         let code = self.generate_typescript_code();
-        self.test_language("TypeScript", "ts", code, &self.waiter.operation).await;
+        self.test_language("TypeScript", "ts", code, &self.waiter.operation)
+            .await;
     }
 
     /// Test Java program.
