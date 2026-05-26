@@ -31,7 +31,7 @@
 //! let mut head_files = HashMap::new();
 //! head_files.insert("src/handler.py".to_string(), "import boto3\ns3 = boto3.client('s3')\ns3.put_object(Bucket='b', Key='k', Body=b'')\n".to_string());
 //!
-//! let comments = generate_review(ReviewInput {
+//! let output = generate_review(ReviewInput {
 //!     region: "*".to_string(),
 //!     account: "*".to_string(),
 //!     service_hints: None,
@@ -40,9 +40,13 @@
 //!     head_files,
 //!     diff: String::new(),
 //!     existing_policy: None,
+//!     policy_path: None,
+//!     include_tool_link: false,
+//!     suggest_policy_changes: false,
+//!     filters: vec![],
 //! }).await?;
 //!
-//! let json = serde_json::to_string_pretty(&comments)?;
+//! let json = serde_json::to_string_pretty(&output)?;
 //! println!("{json}");
 //! # Ok(())
 //! # }
@@ -53,4 +57,4 @@ pub mod review_generator;
 
 // Re-export the most commonly used public items at the crate root.
 pub use policy_checker::PolicyChecker;
-pub use review_generator::{generate_review, ReviewComment, ReviewInput};
+pub use review_generator::{generate_review, ReviewComment, ReviewInput, ReviewOutput};

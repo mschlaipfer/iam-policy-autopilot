@@ -49,13 +49,13 @@ where
 pub struct IamPolicy {
     /// Policy ID
     #[serde(rename = "Id")]
-    pub(crate) id: String,
+    pub id: String,
     /// Policy language version (typically "2012-10-17")
     #[serde(rename = "Version")]
-    pub(crate) version: String,
+    pub version: String,
     /// List of policy statements
     #[serde(rename = "Statement")]
-    pub(crate) statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 /// Represents an individual IAM policy statement
@@ -63,16 +63,16 @@ pub struct IamPolicy {
 pub struct Statement {
     /// Optional statement identifier
     #[serde(rename = "Sid", skip_serializing_if = "Option::is_none")]
-    pub(crate) sid: Option<String>,
+    pub sid: Option<String>,
     /// Effect of the statement (Allow or Deny)
     #[serde(rename = "Effect")]
-    pub(crate) effect: Effect,
+    pub effect: Effect,
     /// List of IAM actions this statement applies to
     #[serde(rename = "Action")]
-    pub(crate) action: Vec<String>,
+    pub action: Vec<String>,
     /// List of resources this statement applies to
     #[serde(rename = "Resource")]
-    pub(crate) resource: Vec<String>,
+    pub resource: Vec<String>,
     /// List of conditions for the statement
     /// Simplified type (from Option<Vec<Condition>>), but we don't need to deserialize into it.
     #[serde(

@@ -227,7 +227,7 @@ impl<'a> Engine<'a> {
     ///
     /// # Errors
     /// Returns an error if policy merging fails
-    pub(crate) fn merge_policies(
+    pub fn merge_policies(
         &self,
         policies: &[PolicyWithMetadata],
     ) -> Result<Vec<PolicyWithMetadata>> {

@@ -8,6 +8,7 @@ description = "GitHub PR review tool for IAM Policy Autopilot: analyses diffs fo
 iam-policy-autopilot-policy-generation = { path = "../iam-policy-autopilot-policy-generation" }
 
 anyhow = { workspace = true }
+glob-match = "0.2"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

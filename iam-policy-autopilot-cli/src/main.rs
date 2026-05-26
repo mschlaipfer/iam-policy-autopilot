@@ -21,7 +21,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use iam_policy_autopilot_code_review::{generate_review, ReviewInput};
+use iam_policy_autopilot_code_review::{generate_review, ReviewInput, ReviewOutput};
 use iam_policy_autopilot_common::telemetry::{
     self, TelemetryChoice, TelemetryEventDerive, ToTelemetryEvent,
 };
@@ -562,6 +562,38 @@ or resource-restricted relative to this policy. Actions that are unconditionally
 omitted from the review output entirely."
         )]
         existing_policy: Option<PathBuf>,
+
+        /// Repo-relative path to the policy file (for linking in summary)
+        #[arg(
+            long = "policy-path",
+            value_name = "REPO_PATH",
+            long_help = "Repo-relative path to the existing policy file. When provided, \
+the summary includes a Markdown link to this path so reviewers can navigate to the policy."
+        )]
+        policy_path: Option<String>,
+
+        /// Include a link to IAM Policy Autopilot in the summary footer
+        #[arg(long = "include-tool-link")]
+        include_tool_link: bool,
+
+        /// Generate suggested policy changes in the summary
+        #[arg(
+            long = "suggest-policy-changes",
+            long_help = "When enabled alongside --existing-policy, the summary includes a \
+suggested policy document covering missing actions. Uses the merge engine to produce \
+a proper policy with correct resources and conditions."
+        )]
+        suggest_policy_changes: bool,
+
+        /// Glob pattern(s) to filter which source files are analyzed
+        #[arg(
+            long = "filter",
+            num_args = 1..,
+            long_help = "Glob patterns to filter which files are analyzed. Only files whose \
+repo-relative path matches at least one pattern are included. Useful for multi-lambda repos \
+where different code paths need different policies. Example: --filter 'src/lambda1/**/*.py'"
+        )]
+        filters: Vec<String>,
     },
 
     /// Start MCP server
@@ -789,7 +821,7 @@ fn parse_file_args(args: &[String]) -> Result<std::collections::HashMap<String, 
 }
 
 /// Handle the generate-review subcommand
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::fn_params_excessive_bools)]
 async fn handle_generate_review(
     base_file_args: Vec<String>,
     head_file_args: Vec<String>,
@@ -799,6 +831,10 @@ async fn handle_generate_review(
     service_hints: Option<Vec<String>>,
     explain: bool,
     existing_policy: Option<PathBuf>,
+    policy_path: Option<String>,
+    include_tool_link: bool,
+    suggest_policy_changes: bool,
+    filters: Vec<String>,
     pretty: bool,
 ) -> Result<()> {
     info!("Running generate-review command");
@@ -821,7 +857,7 @@ async fn handle_generate_review(
         })
         .transpose()?;
 
-    let comments = generate_review(ReviewInput {
+    let output: ReviewOutput = generate_review(ReviewInput {
         region,
         account,
         service_hints,
@@ -830,16 +866,20 @@ async fn handle_generate_review(
         head_files,
         diff,
         existing_policy: existing_policy_json,
+        policy_path,
+        include_tool_link,
+        suggest_policy_changes,
+        filters,
     })
     .await
     .context("Failed to generate review comments")?;
 
     let json_output = if pretty {
-        iam_policy_autopilot_policy_generation::JsonProvider::stringify_pretty(&comments)
-            .context("Failed to serialize review comments to pretty JSON")?
+        iam_policy_autopilot_policy_generation::JsonProvider::stringify_pretty(&output)
+            .context("Failed to serialize review output to pretty JSON")?
     } else {
-        iam_policy_autopilot_policy_generation::JsonProvider::stringify(&comments)
-            .context("Failed to serialize review comments to JSON")?
+        iam_policy_autopilot_policy_generation::JsonProvider::stringify(&output)
+            .context("Failed to serialize review output to JSON")?
     };
 
     print!("{json_output}");
@@ -1001,6 +1041,10 @@ async fn main() {
             service_hints,
             explain,
             existing_policy,
+            policy_path,
+            include_tool_link,
+            suggest_policy_changes,
+            filters,
         } => {
             // Initialize logging
             if let Err(e) = init_logging(debug) {
@@ -1017,6 +1061,10 @@ async fn main() {
                 service_hints,
                 explain,
                 existing_policy,
+                policy_path,
+                include_tool_link,
+                suggest_policy_changes,
+                filters,
                 pretty,
             )
             .await

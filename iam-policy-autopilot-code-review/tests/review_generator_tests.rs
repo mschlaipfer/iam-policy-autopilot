@@ -118,11 +118,17 @@ async fn test_review_generator_fixture(
         head_files,
         diff: fixture.diff,
         existing_policy: None,
+        policy_path: None,
+        include_tool_link: false,
+        suggest_policy_changes: false,
+        filters: vec![],
     };
 
-    let comments = generate_review(input)
+    let output = generate_review(input)
         .await
         .unwrap_or_else(|e| panic!("[{}] generate_review failed: {e}", fixture.description));
+
+    let comments = &output.comments;
 
     assert_eq!(
         comments.len(),
