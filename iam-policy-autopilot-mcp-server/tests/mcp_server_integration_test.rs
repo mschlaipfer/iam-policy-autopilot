@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use rmcp::model::InitializeRequestParam;
+use rmcp::model::InitializeRequestParams;
 use rmcp::RoleClient;
 use rmcp::{
-    model::{CallToolRequestParam, ClientCapabilities, ClientInfo, Implementation},
+    model::{CallToolRequestParams, ClientInfo, Implementation},
     service::RunningService,
     transport::{StreamableHttpClientTransport, TokioChildProcess},
     RmcpError, ServiceExt,
@@ -28,9 +28,9 @@ async fn setup_stdio() -> RunningService<RoleClient, ()> {
     .unwrap()
 }
 
-async fn wait_for_server_ready(port: u16, max_attempts: u32) -> bool {
+async fn wait_for_server_ready(bind_address: &str, port: u16, max_attempts: u32) -> bool {
     for _ in 0..max_attempts {
-        if TcpStream::connect(format!("127.0.0.1:{}", port))
+        if TcpStream::connect(format!("{bind_address}:{port}"))
             .await
             .is_ok()
         {
@@ -41,9 +41,10 @@ async fn wait_for_server_ready(port: u16, max_attempts: u32) -> bool {
     false
 }
 
-async fn setup_http_with_port(
+async fn setup_http_with_bind_address(
     port: u16,
-) -> (RunningService<RoleClient, InitializeRequestParam>, Child) {
+    bind_address: &str,
+) -> (RunningService<RoleClient, InitializeRequestParams>, Child) {
     // Start HTTP server as a background process using debug binary
     let mut command = Command::new("../target/debug/iam-policy-autopilot");
     command
@@ -53,6 +54,8 @@ async fn setup_http_with_port(
             "http",
             "--port",
             &port.to_string(),
+            "--bind-address",
+            bind_address,
         ])
         .stderr(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped());
@@ -60,11 +63,8 @@ async fn setup_http_with_port(
     let server_process = command.spawn().expect("Failed to start HTTP server");
 
     // Wait for server to be ready with proper timeout
-    if !wait_for_server_ready(port, 100).await {
-        panic!(
-            "Server failed to start within timeout period on port {}",
-            port
-        );
+    if !wait_for_server_ready(bind_address, port, 100).await {
+        panic!("Server failed to start within timeout period on {bind_address}:{port}",);
     }
 
     // Give a bit more time for the MCP service to be fully initialized
@@ -72,26 +72,19 @@ async fn setup_http_with_port(
 
     // Create HTTP client transport
     let transport =
-        StreamableHttpClientTransport::from_uri(format!("http://127.0.0.1:{}/mcp", port));
-    let client_info = ClientInfo {
-        protocol_version: Default::default(),
-        capabilities: ClientCapabilities::default(),
-        client_info: Implementation {
-            name: "test http client".to_string(),
-            title: None,
-            version: "0.0.1".to_string(),
-            website_url: None,
-            icons: None,
-        },
-    };
+        StreamableHttpClientTransport::from_uri(format!("http://{bind_address}:{port}/mcp"));
+    let client_info = ClientInfo::new(
+        Default::default(),
+        Implementation::new("test http client", "0.0.1"),
+    );
 
     let client = client_info.serve(transport).await.unwrap();
 
     (client, server_process)
 }
 
-async fn setup_http() -> (RunningService<RoleClient, InitializeRequestParam>, Child) {
-    setup_http_with_port(8001).await
+async fn setup_http() -> (RunningService<RoleClient, InitializeRequestParams>, Child) {
+    setup_http_with_bind_address(8001, "127.0.0.1").await
 }
 
 #[tokio::test]
@@ -132,16 +125,18 @@ async fn test_stdio_generate_policy() {
 
     let client = setup_stdio().await;
     let tool_result = client
-        .call_tool(CallToolRequestParam {
-            name: "generate_application_policies".into(),
-            arguments: json!({
-                "SourceFiles": [test_file],
-                "Region": "us-east-1",
-                "Account": "123456789012"
-            })
-            .as_object()
-            .cloned(),
-        })
+        .call_tool(
+            CallToolRequestParams::new("generate_application_policies").with_arguments(
+                json!({
+                    "SourceFiles": [test_file],
+                    "Region": "us-east-1",
+                    "Account": "123456789012"
+                })
+                .as_object()
+                .cloned()
+                .expect("test arguments should be a valid JSON object"),
+            ),
+        )
         .await
         .unwrap();
 
@@ -152,14 +147,17 @@ async fn test_stdio_generate_policy() {
 async fn test_stdio_generate_policy_for_access_denied() {
     let client = setup_stdio().await;
     let tool_result = client
-        .call_tool(CallToolRequestParam {
-            name: "generate_policy_for_access_denied".into(),
-            arguments: json!({
-                "ErrorMessage": "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: s3:GetObject on resource: arn:aws:s3:::test-bucket/test-file.txt"
-            })
-            .as_object()
-            .cloned(),
-        })
+        .call_tool(
+            CallToolRequestParams::new("generate_policy_for_access_denied")
+                .with_arguments(
+                    json!({
+                        "ErrorMessage": "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: s3:GetObject on resource: arn:aws:s3:::test-bucket/test-file.txt"
+                    })
+                    .as_object()
+                    .cloned()
+                    .expect("test arguments should be a valid JSON object"),
+                ),
+        )
         .await
         .unwrap();
 
@@ -209,18 +207,20 @@ async fn test_http_generate_policy() {
         .unwrap()
         .join(Path::new("tests/test_data/lambda.py"));
 
-    let (client, mut server_process) = setup_http_with_port(8002).await;
+    let (client, mut server_process) = setup_http_with_bind_address(8002, "127.0.0.1").await;
     let tool_result = client
-        .call_tool(CallToolRequestParam {
-            name: "generate_application_policies".into(),
-            arguments: json!({
-                "SourceFiles": [test_file],
-                "Region": "us-east-1",
-                "Account": "123456789012"
-            })
-            .as_object()
-            .cloned(),
-        })
+        .call_tool(
+            CallToolRequestParams::new("generate_application_policies").with_arguments(
+                json!({
+                    "SourceFiles": [test_file],
+                    "Region": "us-east-1",
+                    "Account": "123456789012"
+                })
+                .as_object()
+                .cloned()
+                .expect("test arguments should be a valid JSON object"),
+            ),
+        )
         .await
         .unwrap();
 
@@ -233,16 +233,19 @@ async fn test_http_generate_policy() {
 #[tokio::test]
 #[serial]
 async fn test_http_generate_policy_for_access_denied() {
-    let (client, mut server_process) = setup_http_with_port(8003).await;
+    let (client, mut server_process) = setup_http_with_bind_address(8003, "127.0.0.1").await;
     let tool_result = client
-        .call_tool(CallToolRequestParam {
-            name: "generate_policy_for_access_denied".into(),
-            arguments: json!({
-                "ErrorMessage": "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: s3:GetObject on resource: arn:aws:s3:::test-bucket/test-file.txt"
-            })
-            .as_object()
-            .cloned(),
-        })
+        .call_tool(
+            CallToolRequestParams::new("generate_policy_for_access_denied")
+                .with_arguments(
+                    json!({
+                        "ErrorMessage": "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: s3:GetObject on resource: arn:aws:s3:::test-bucket/test-file.txt"
+                    })
+                    .as_object()
+                    .cloned()
+                    .expect("test arguments should be a valid JSON object"),
+                ),
+        )
         .await
         .unwrap();
 
@@ -251,4 +254,23 @@ async fn test_http_generate_policy_for_access_denied() {
     // Clean up: kill the server process
     let _ = server_process.start_kill();
     let _ = server_process.wait().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn test_http_custom_bind_address_list_tools() {
+    let (client, mut server_process) = setup_http_with_bind_address(8004, "127.0.0.1").await;
+
+    let tools_result = client.list_tools(None).await.unwrap();
+
+    // Verify we have the expected tools
+    assert_eq!(tools_result.tools.len(), 3);
+
+    let tool_names: Vec<&str> = tools_result.tools.iter().map(|t| t.name.as_ref()).collect();
+    assert!(tool_names.contains(&"generate_application_policies"));
+    assert!(tool_names.contains(&"generate_policy_for_access_denied"));
+    assert!(tool_names.contains(&"fix_access_denied"));
+
+    // Clean up
+    let _ = server_process.kill().await;
 }

@@ -6,11 +6,15 @@ license.workspace = true
 repository.workspace = true
 description = "Core library for IAM permission analysis and AWS SDK method extraction"
 
+[package.metadata.cargo-machete]
+ignored = ["hcl-rs"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 # Universal dependencies (all compilation targets)
 [dependencies]
+iam-policy-autopilot-common = { path = "../iam-policy-autopilot-common" }
 serde.workspace = true
 thiserror.workspace = true
 log.workspace = true
@@ -28,11 +32,13 @@ tokio.workspace = true
 async-trait.workspace = true
 strsim.workspace = true
 derive-new.workspace = true
-
+hcl-rs.workspace = true
+walkdir.workspace = true
 
 # Build dependencies
 [build-dependencies]
 serde.workspace = true
+regex.workspace = true
 
 # Async runtime
 tokio.workspace = true
@@ -45,6 +51,7 @@ serde_json.workspace = true
 aws-lc-rs.workspace = true
 git2.workspace = true
 relative-path.workspace = true
+convert_case.workspace = true
 
 [features]
 default = []
@@ -58,6 +65,8 @@ tokio-test.workspace = true
 tempfile.workspace = true
 criterion.workspace = true
 proptest.workspace = true
+rstest.workspace = true
+paste.workspace = true
 test-log = "0.2"
 env_logger.workspace = true
 wiremock = "0.6"

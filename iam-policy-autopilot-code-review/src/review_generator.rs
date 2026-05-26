@@ -27,20 +27,20 @@
 //!    permissions that are no longer required, emits one additional comment
 //!    anchored to the first added line (or line 1).
 
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::fmt::Write as _;
 #[cfg(test)]
 use std::collections::BTreeMap;
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use futures::future::join_all;
 use iam_policy_autopilot_policy_generation::api::extract_sdk_calls;
+use iam_policy_autopilot_policy_generation::api::generate_policies;
 use iam_policy_autopilot_policy_generation::api::model::{
     AwsContext, ExtractSdkCallsConfig, GeneratePoliciesResult, GeneratePolicyConfig, ServiceHints,
 };
-use iam_policy_autopilot_policy_generation::api::generate_policies;
 use iam_policy_autopilot_policy_generation::{Explanations, OperationSource};
 use log::warn;
 
@@ -173,8 +173,11 @@ fn parse_added_lines(diff: &str) -> HashMap<String, HashSet<u32>> {
             continue;
         }
 
-        if line.starts_with("diff ") || line.starts_with("index ") || line.starts_with("new file")
-            || line.starts_with("deleted file") || line.starts_with("old mode")
+        if line.starts_with("diff ")
+            || line.starts_with("index ")
+            || line.starts_with("new file")
+            || line.starts_with("deleted file")
+            || line.starts_with("old mode")
             || line.starts_with("new mode")
         {
             continue;
@@ -238,8 +241,11 @@ fn parse_removed_lines(diff: &str) -> HashMap<String, HashSet<u32>> {
             continue;
         }
 
-        if line.starts_with("diff ") || line.starts_with("index ") || line.starts_with("new file")
-            || line.starts_with("deleted file") || line.starts_with("old mode")
+        if line.starts_with("diff ")
+            || line.starts_with("index ")
+            || line.starts_with("new file")
+            || line.starts_with("deleted file")
+            || line.starts_with("old mode")
             || line.starts_with("new mode")
         {
             continue;
@@ -281,9 +287,7 @@ fn parse_hunk_new_start(hunk_header: &str) -> Option<u32> {
     let plus_pos = after_at.find(" +")?;
     let new_part = &after_at[plus_pos + 2..];
     // Take up to the next space or comma
-    let end = new_part
-        .find([',', ' '])
-        .unwrap_or(new_part.len());
+    let end = new_part.find([',', ' ']).unwrap_or(new_part.len());
     new_part[..end].parse().ok()
 }
 
@@ -296,9 +300,7 @@ fn parse_hunk_old_start(hunk_header: &str) -> Option<u32> {
     // The old part starts with `-`
     let minus_part = after_at.strip_prefix('-')?;
     // Take up to the next space or comma
-    let end = minus_part
-        .find([',', ' '])
-        .unwrap_or(minus_part.len());
+    let end = minus_part.find([',', ' ']).unwrap_or(minus_part.len());
     minus_part[..end].parse().ok()
 }
 
@@ -453,7 +455,8 @@ async fn analyse_source(
         .context("Failed to create temporary source file")?;
     tmp.write_all(content.as_bytes())
         .context("Failed to write source to temporary file")?;
-    tmp.flush().context("Failed to flush temporary source file")?;
+    tmp.flush()
+        .context("Failed to flush temporary source file")?;
 
     let source_files = vec![PathBuf::from(tmp.path())];
 
@@ -474,6 +477,11 @@ async fn analyse_source(
         minimize_policy_size: false,
         disable_file_system_cache: false,
         explain_filters,
+        terraform_dir: None,
+        terraform_files: Vec::new(),
+        tfstate_paths: Vec::new(),
+        tfvars_files: Vec::new(),
+        explain_resource_filters: None,
     })
     .await
     .context("Policy generation failed")?;
@@ -568,8 +576,7 @@ fn format_removed_comment_body(removed: &BTreeSet<String>) -> String {
         return String::new();
     }
 
-    let mut section =
-        "✅ **IAM permissions no longer required after this change:**\n".to_string();
+    let mut section = "✅ **IAM permissions no longer required after this change:**\n".to_string();
     for action in removed {
         write!(section, "\n- `{action}`").expect("writing to a String is infallible");
     }
@@ -594,8 +601,7 @@ fn format_comment_body(
     let mut parts: Vec<String> = Vec::new();
 
     if !added.is_empty() {
-        let mut section =
-            "⚠️ **New IAM permissions required by this change:**\n".to_string();
+        let mut section = "⚠️ **New IAM permissions required by this change:**\n".to_string();
 
         match added_groups {
             Some(groups) => {
@@ -768,15 +774,11 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
         let base_actions = base_result.map(extract_actions).unwrap_or_default();
 
         // Delta: permissions that are new (not present in base set)
-        let new_permissions: BTreeSet<String> = head_actions
-            .difference(&base_actions)
-            .cloned()
-            .collect();
+        let new_permissions: BTreeSet<String> =
+            head_actions.difference(&base_actions).cloned().collect();
         // Delta: permissions that are gone (not present in head set)
-        let gone_permissions: BTreeSet<String> = base_actions
-            .difference(&head_actions)
-            .cloned()
-            .collect();
+        let gone_permissions: BTreeSet<String> =
+            base_actions.difference(&head_actions).cloned().collect();
 
         if new_permissions.is_empty() && gone_permissions.is_empty() {
             continue;
@@ -788,7 +790,9 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
 
         let empty_set = HashSet::new();
         let added_lines = added_lines_by_file.get(file.as_str()).unwrap_or(&empty_set);
-        let removed_lines = removed_lines_by_file.get(file.as_str()).unwrap_or(&empty_set);
+        let removed_lines = removed_lines_by_file
+            .get(file.as_str())
+            .unwrap_or(&empty_set);
 
         // Find the language for this file
         let language = Language::from_path(file);
@@ -879,10 +883,8 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
 
             // Any gone permissions not attributed to a specific removed line go
             // into the fallback RIGHT-side comment.
-            let unattributed: BTreeSet<String> = gone_permissions
-                .difference(&attributed)
-                .cloned()
-                .collect();
+            let unattributed: BTreeSet<String> =
+                gone_permissions.difference(&attributed).cloned().collect();
 
             if !unattributed.is_empty() {
                 let anchor_line = {
@@ -904,10 +906,7 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
 
     // RIGHT-side comments for new permissions on added lines.
     for ((file, line), actions) in &added_by_location {
-        let explanations = explanations_by_file
-            .get(file)
-            .cloned()
-            .unwrap_or_default();
+        let explanations = explanations_by_file.get(file).cloned().unwrap_or_default();
         let body = format_added_comment_body(actions, &explanations);
         if !body.is_empty() {
             comments.push(ReviewComment {
@@ -987,7 +986,10 @@ mod tests {
 
     #[test]
     fn test_format_comment_body_with_explanation() {
-        let added: BTreeSet<String> = ["kms:GenerateDataKey"].iter().map(|s| s.to_string()).collect();
+        let added: BTreeSet<String> = ["kms:GenerateDataKey"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
         let removed = BTreeSet::new();
         let mut explanations = HashMap::new();
         explanations.insert(
@@ -1032,14 +1034,10 @@ mod tests {
 
     #[test]
     fn test_format_comment_body_grouped_by_operation() {
-        let added: BTreeSet<String> = [
-            "s3:GetObject",
-            "s3:PutObject",
-            "s3:PutObjectAcl",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+        let added: BTreeSet<String> = ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
         let removed = BTreeSet::new();
         let explanations = HashMap::new();
 
@@ -1077,6 +1075,7 @@ mod tests {
         let result = GeneratePoliciesResult {
             policies: vec![],
             explanations: None,
+            resource_binding_explanations: None,
         };
         assert!(extract_actions(&result).is_empty());
     }
@@ -1178,6 +1177,4 @@ index abc1234..def5678 100644
 - `s3:GetObjectVersion`";
         assert_eq!(body, expected);
     }
-
 }
-

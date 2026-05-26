@@ -93,8 +93,8 @@ async fn test_review_generator_fixture(
 ) {
     let raw = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("cannot read fixture {path:?}: {e}"));
-    let fixture: ReviewFixture = toml::from_str(&raw)
-        .unwrap_or_else(|e| panic!("cannot parse fixture {path:?}: {e}"));
+    let fixture: ReviewFixture =
+        toml::from_str(&raw).unwrap_or_else(|e| panic!("cannot parse fixture {path:?}: {e}"));
 
     // Strip leading newlines from file content values so authors can write
     // `"src/handler.py" = """\n<content>` naturally.
