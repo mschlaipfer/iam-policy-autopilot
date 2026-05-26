@@ -30,6 +30,7 @@
 #[cfg(test)]
 use std::collections::BTreeMap;
 use std::collections::{BTreeSet, HashMap, HashSet};
+#[cfg(test)]
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::PathBuf;
@@ -41,7 +42,8 @@ use iam_policy_autopilot_policy_generation::api::generate_policies;
 use iam_policy_autopilot_policy_generation::api::model::{
     AwsContext, ExtractSdkCallsConfig, GeneratePoliciesResult, GeneratePolicyConfig, ServiceHints,
 };
-use iam_policy_autopilot_policy_generation::{Explanations, OperationSource};
+#[cfg(test)]
+use iam_policy_autopilot_policy_generation::Explanations;
 use log::warn;
 
 // ── Public input/output types ─────────────────────────────────────────────────
@@ -74,6 +76,12 @@ pub struct ReviewInput {
     ///
     /// When empty, comments are anchored to line 1.
     pub diff: String,
+    /// Optional existing IAM policy document (JSON string) to compare against.
+    ///
+    /// When provided, each required action is classified as missing, denied,
+    /// conditionally allowed, or resource-restricted relative to this policy.
+    /// Actions unconditionally allowed are omitted from the output entirely.
+    pub existing_policy: Option<String>,
 }
 
 /// Which side of the diff the comment is anchored to.
@@ -399,46 +407,6 @@ fn extract_actions_for_policy(result: &GeneratePoliciesResult, index: usize) -> 
     actions
 }
 
-/// Returns `true` if any operation in the explanation reasons was added via
-/// Forward Access Sessions (FAS) expansion.
-fn explanation_has_fas(explanation: &iam_policy_autopilot_policy_generation::Explanation) -> bool {
-    explanation.reasons.iter().any(|r| {
-        r.operations
-            .iter()
-            .any(|op| matches!(op.source, OperationSource::Fas(_)))
-    })
-}
-
-/// Extract explain text for a set of actions from a [`GeneratePoliciesResult`].
-///
-/// Returns a map from action name → human-readable explanation string.
-///
-/// Only actions that have a "surprising" reason are included:
-/// - **Forward Access Sessions (FAS)**: the action was not called directly in
-///   code but is required because AWS services call other services on your
-///   behalf.
-fn extract_explanations(result: &GeneratePoliciesResult) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-
-    let Some(explanations) = &result.explanations else {
-        return map;
-    };
-
-    for (action, explanation) in &explanations.explanation_for_action {
-        if explanation_has_fas(explanation) {
-            map.insert(
-                action.clone(),
-                format!(
-                    "needed for [Forward Access Session]({}) permissions",
-                    Explanations::FAS_DOCS_URL
-                ),
-            );
-        }
-    }
-
-    map
-}
-
 /// Write `content` to a named temporary file with the given extension and run
 /// policy generation on it with `individual_policies = true`.
 async fn analyse_source(
@@ -534,6 +502,7 @@ async fn extract_sdk_call_lines(
 }
 
 /// Format a flat list of actions as Markdown bullet points, annotating FAS actions.
+#[cfg(test)]
 fn format_action_list(
     actions: &BTreeSet<String>,
     explanations: &HashMap<String, String>,
@@ -549,38 +518,129 @@ fn format_action_list(
     out
 }
 
-/// Format a Markdown review comment body for a set of added actions only.
-///
-/// Used when generating per-SDK-call comments (no "removed" section, since
-/// removed permissions are reported in a separate file-level comment).
+/// Format a Markdown review comment body for a set of added actions,
+/// classifying each action against the reference policy when provided.
 fn format_added_comment_body(
     added: &BTreeSet<String>,
-    explanations: &HashMap<String, String>,
+    checker: Option<&crate::policy_checker::PolicyChecker>,
 ) -> String {
     if added.is_empty() {
         return String::new();
     }
 
-    let mut section = "⚠️ **New IAM permissions required by this change:**\n".to_string();
-    section.push_str(&format_action_list(added, explanations));
-    section.push_str(
-        "\n\n> These permissions were detected via static analysis of the added code.\n\
-         > Review carefully before granting.",
-    );
-    section
+    match checker {
+        Some(checker) => format_added_with_policy(added, checker),
+        None => format_added_no_policy(added),
+    }
 }
 
-/// Format a Markdown review comment body for a set of removed actions only.
+fn format_added_no_policy(added: &BTreeSet<String>) -> String {
+    let actions_str = added
+        .iter()
+        .map(|a| format!("`{a}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("**Requires:** {actions_str}")
+}
+
+fn format_added_with_policy(
+    added: &BTreeSet<String>,
+    checker: &crate::policy_checker::PolicyChecker,
+) -> String {
+    let mut missing: Vec<&String> = Vec::new();
+    let mut conditional: Vec<(String, String)> = Vec::new();
+    let mut restricted: Vec<(String, String)> = Vec::new();
+    let mut denied: Vec<&String> = Vec::new();
+
+    for action in added {
+        let status = checker.check_action(action);
+
+        if status.is_fully_allowed() {
+            continue;
+        }
+
+        if status.denied {
+            denied.push(action);
+        }
+
+        if status.is_missing() {
+            missing.push(action);
+            continue;
+        }
+
+        if !status.conditions.is_empty() {
+            let conds = status.conditions.join(", ");
+            conditional.push((action.clone(), conds));
+        }
+        if !status.restricted_resources.is_empty() {
+            let res = status
+                .restricted_resources
+                .iter()
+                .map(|r| format!("`{r}`"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            restricted.push((action.clone(), res));
+        }
+    }
+
+    // If everything is fully allowed, no comment needed.
+    if missing.is_empty() && conditional.is_empty() && restricted.is_empty() && denied.is_empty() {
+        return String::new();
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+
+    if !missing.is_empty() {
+        let list = missing
+            .iter()
+            .map(|a| format!("`{a}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        parts.push(format!("**Missing:** {list}"));
+    }
+
+    if !conditional.is_empty() {
+        let list = conditional
+            .iter()
+            .map(|(a, c)| format!("`{a}` ({c})"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        parts.push(format!("**Conditional:** {list}"));
+    }
+
+    if !restricted.is_empty() {
+        let list = restricted
+            .iter()
+            .map(|(a, r)| format!("`{a}` (only {r})"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        parts.push(format!("**Resource-restricted:** {list}"));
+    }
+
+    if !denied.is_empty() {
+        let list = denied
+            .iter()
+            .map(|a| format!("`{a}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        parts.push(format!("**Denied:** {list}"));
+    }
+
+    parts.join("\n")
+}
+
+/// Format a Markdown review comment body for a set of removed actions.
 fn format_removed_comment_body(removed: &BTreeSet<String>) -> String {
     if removed.is_empty() {
         return String::new();
     }
 
-    let mut section = "✅ **IAM permissions no longer required after this change:**\n".to_string();
-    for action in removed {
-        write!(section, "\n- `{action}`").expect("writing to a String is infallible");
-    }
-    section
+    let list = removed
+        .iter()
+        .map(|a| format!("`{a}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("**No longer required:** {list}")
 }
 
 /// Format a Markdown review comment body for a set of added/removed actions.
@@ -689,6 +749,14 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
         return Ok(vec![]);
     }
 
+    // ── Parse reference policy if provided ─────────────────────────────────────
+    let policy_checker = input
+        .existing_policy
+        .as_deref()
+        .map(crate::policy_checker::PolicyChecker::from_json)
+        .transpose()
+        .map_err(|e| anyhow::anyhow!("Failed to parse existing policy: {e}"))?;
+
     // ── Parse diff to get added and removed lines per file ────────────────────
     let added_lines_by_file: HashMap<String, HashSet<u32>> = parse_added_lines(&input.diff);
     let removed_lines_by_file: HashMap<String, HashSet<u32>> = parse_removed_lines(&input.diff);
@@ -763,9 +831,6 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
     // anchored to the first added line (or line 1).
     let mut removed_fallback: std::collections::BTreeMap<String, (u32, BTreeSet<String>)> =
         std::collections::BTreeMap::new();
-    // Explanations per file (from head result).
-    let mut explanations_by_file: HashMap<String, HashMap<String, String>> = HashMap::new();
-
     for file in &files {
         let head_result = result_map.get(&(file.clone(), true));
         let base_result = result_map.get(&(file.clone(), false));
@@ -783,10 +848,6 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
         if new_permissions.is_empty() && gone_permissions.is_empty() {
             continue;
         }
-
-        // Collect explanations from the head result (most relevant for new perms).
-        let explanations = head_result.map(extract_explanations).unwrap_or_default();
-        explanations_by_file.insert(file.clone(), explanations);
 
         let empty_set = HashSet::new();
         let added_lines = added_lines_by_file.get(file.as_str()).unwrap_or(&empty_set);
@@ -906,8 +967,7 @@ pub async fn generate_review(input: ReviewInput) -> Result<Vec<ReviewComment>> {
 
     // RIGHT-side comments for new permissions on added lines.
     for ((file, line), actions) in &added_by_location {
-        let explanations = explanations_by_file.get(file).cloned().unwrap_or_default();
-        let body = format_added_comment_body(actions, &explanations);
+        let body = format_added_comment_body(actions, policy_checker.as_ref());
         if !body.is_empty() {
             comments.push(ReviewComment {
                 path: file.clone(),
@@ -1132,28 +1192,50 @@ index abc1234..def5678 100644
     #[test]
     fn test_format_added_comment_body_empty() {
         let added = BTreeSet::new();
-        let explanations = HashMap::new();
-        let body = format_added_comment_body(&added, &explanations);
+        let body = format_added_comment_body(&added, None);
         assert!(body.is_empty());
     }
 
     #[test]
-    fn test_format_added_comment_body_with_actions() {
+    fn test_format_added_comment_body_no_policy() {
         let added: BTreeSet<String> = ["s3:PutObject", "s3:PutObjectAcl"]
             .iter()
             .map(|s| s.to_string())
             .collect();
-        let explanations = HashMap::new();
-        let body = format_added_comment_body(&added, &explanations);
-        let expected = "\
-⚠️ **New IAM permissions required by this change:**\n\
-\n\
-- `s3:PutObject`\n\
-- `s3:PutObjectAcl`\n\
-\n\
-> These permissions were detected via static analysis of the added code.\n\
-> Review carefully before granting.";
-        assert_eq!(body, expected);
+        let body = format_added_comment_body(&added, None);
+        assert_eq!(body, "**Requires:** `s3:PutObject`, `s3:PutObjectAcl`");
+    }
+
+    #[test]
+    fn test_format_added_comment_body_with_policy_missing() {
+        let added: BTreeSet<String> = ["sqs:SendMessage"].iter().map(|s| s.to_string()).collect();
+        let checker = crate::policy_checker::PolicyChecker::from_json(
+            r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:*","Resource":"*"}]}"#,
+        ).unwrap();
+        let body = format_added_comment_body(&added, Some(&checker));
+        assert_eq!(body, "**Missing:** `sqs:SendMessage`");
+    }
+
+    #[test]
+    fn test_format_added_comment_body_with_policy_fully_allowed() {
+        let added: BTreeSet<String> = ["s3:PutObject"].iter().map(|s| s.to_string()).collect();
+        let checker = crate::policy_checker::PolicyChecker::from_json(
+            r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:*","Resource":"*"}]}"#,
+        ).unwrap();
+        let body = format_added_comment_body(&added, Some(&checker));
+        assert!(body.is_empty());
+    }
+
+    #[test]
+    fn test_format_added_comment_body_with_policy_conditional() {
+        let added: BTreeSet<String> = ["kms:Decrypt"].iter().map(|s| s.to_string()).collect();
+        let checker = crate::policy_checker::PolicyChecker::from_json(
+            r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"kms:Decrypt","Resource":"*","Condition":{"StringEquals":{"kms:ViaService":"s3.us-east-1.amazonaws.com"}}}]}"#,
+        ).unwrap();
+        let body = format_added_comment_body(&added, Some(&checker));
+        assert!(body.contains("**Conditional:**"));
+        assert!(body.contains("kms:Decrypt"));
+        assert!(body.contains("kms:ViaService"));
     }
 
     #[test]
@@ -1170,11 +1252,9 @@ index abc1234..def5678 100644
             .map(|s| s.to_string())
             .collect();
         let body = format_removed_comment_body(&removed);
-        let expected = "\
-✅ **IAM permissions no longer required after this change:**\n\
-\n\
-- `s3:GetObject`\n\
-- `s3:GetObjectVersion`";
-        assert_eq!(body, expected);
+        assert_eq!(
+            body,
+            "**No longer required:** `s3:GetObject`, `s3:GetObjectVersion`"
+        );
     }
 }

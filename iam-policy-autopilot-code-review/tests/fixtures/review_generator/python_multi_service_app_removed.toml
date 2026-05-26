@@ -76,48 +76,25 @@ if __name__ == "__main__":
 path = "app.py"
 line = 6
 side = "LEFT"
-body = """
-✅ **IAM permissions no longer required after this change:**
-
-- `kms:Decrypt`
-- `kms:GenerateDataKey`
-- `s3-object-lambda:PutObject`
-- `s3:PutObject`
-- `s3:PutObjectAcl`
-- `s3:PutObjectLegalHold`
-- `s3:PutObjectRetention`
-- `s3:PutObjectTagging`"""
+body = "**No longer required:** `kms:Decrypt`, `kms:GenerateDataKey`, `s3-object-lambda:PutObject`, `s3:PutObject`, `s3:PutObjectAcl`, `s3:PutObjectLegalHold`, `s3:PutObjectRetention`, `s3:PutObjectTagging`"
 
 # Comment 2: client.get_secret_value on base line 11 – LEFT side
 [[expected_comments]]
 path = "app.py"
 line = 11
 side = "LEFT"
-body = """
-✅ **IAM permissions no longer required after this change:**
-
-- `kms:Decrypt`
-- `secretsmanager:GetSecretValue`"""
+body = "**No longer required:** `kms:Decrypt`, `secretsmanager:GetSecretValue`"
 
 # Comment 3: table.put_item on base line 18 – LEFT side
 [[expected_comments]]
 path = "app.py"
 line = 18
 side = "LEFT"
-body = """
-✅ **IAM permissions no longer required after this change:**
-
-- `dynamodb:PutItem`
-- `dynamodb:WriteDataForReplication`
-- `kms:Decrypt`"""
+body = "**No longer required:** `dynamodb:PutItem`, `dynamodb:WriteDataForReplication`, `kms:Decrypt`"
 
 # Comment 4: sqs.send_message on base line 23 – LEFT side
 [[expected_comments]]
 path = "app.py"
 line = 23
 side = "LEFT"
-body = """
-✅ **IAM permissions no longer required after this change:**
-
-- `kms:GenerateDataKey`
-- `sqs:SendMessage`"""
+body = "**No longer required:** `kms:GenerateDataKey`, `sqs:SendMessage`"

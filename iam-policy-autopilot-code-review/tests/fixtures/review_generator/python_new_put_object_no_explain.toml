@@ -25,16 +25,4 @@ s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
 [[expected_comments]]
 path = "src/handler.py"
 line = 3
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `kms:GenerateDataKey`
-- `s3-object-lambda:PutObject`
-- `s3:PutObject`
-- `s3:PutObjectAcl`
-- `s3:PutObjectLegalHold`
-- `s3:PutObjectRetention`
-- `s3:PutObjectTagging`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `kms:GenerateDataKey`, `s3-object-lambda:PutObject`, `s3:PutObject`, `s3:PutObjectAcl`, `s3:PutObjectLegalHold`, `s3:PutObjectRetention`, `s3:PutObjectTagging`"

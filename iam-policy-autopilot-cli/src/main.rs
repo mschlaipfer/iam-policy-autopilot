@@ -550,6 +550,18 @@ that contains an SDK call.  When omitted, comments are anchored to line 1."
 of why each IAM action was added, referencing the SDK call that triggered it."
         )]
         explain: bool,
+
+        // TODO: future support for IAM policy ARN input (fetch via AWS API)
+        /// Path to an existing IAM policy JSON file to compare against
+        #[arg(
+            long = "existing-policy",
+            value_name = "FILE",
+            long_help = "Path to a JSON file containing an existing IAM policy document. \
+When provided, each required action is classified as missing, denied, conditionally allowed, \
+or resource-restricted relative to this policy. Actions that are unconditionally allowed are \
+omitted from the review output entirely."
+        )]
+        existing_policy: Option<PathBuf>,
     },
 
     /// Start MCP server
@@ -786,6 +798,7 @@ async fn handle_generate_review(
     account: String,
     service_hints: Option<Vec<String>>,
     explain: bool,
+    existing_policy: Option<PathBuf>,
     pretty: bool,
 ) -> Result<()> {
     info!("Running generate-review command");
@@ -801,6 +814,13 @@ async fn handle_generate_review(
         None => String::new(),
     };
 
+    let existing_policy_json = existing_policy
+        .map(|path| {
+            std::fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read existing policy file {path:?}"))
+        })
+        .transpose()?;
+
     let comments = generate_review(ReviewInput {
         region,
         account,
@@ -809,6 +829,7 @@ async fn handle_generate_review(
         base_files,
         head_files,
         diff,
+        existing_policy: existing_policy_json,
     })
     .await
     .context("Failed to generate review comments")?;
@@ -979,6 +1000,7 @@ async fn main() {
             account,
             service_hints,
             explain,
+            existing_policy,
         } => {
             // Initialize logging
             if let Err(e) = init_logging(debug) {
@@ -994,6 +1016,7 @@ async fn main() {
                 account,
                 service_hints,
                 explain,
+                existing_policy,
                 pretty,
             )
             .await

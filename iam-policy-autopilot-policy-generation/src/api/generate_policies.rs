@@ -45,7 +45,8 @@ use crate::{
 /// - Find `"item"` at position 6, remaining becomes `"version"`
 /// - Find `"get"` in `"version"` → NOT FOUND (even though "get" exists before "item")
 /// - Result: NO MATCH ✓
-fn action_matches_pattern(action: &str, pattern: &str) -> bool {
+#[must_use]
+pub fn action_matches_pattern(action: &str, pattern: &str) -> bool {
     let pattern_lower = pattern.to_lowercase();
     let action_lower = action.to_lowercase();
 
@@ -96,7 +97,8 @@ fn action_matches_pattern(action: &str, pattern: &str) -> bool {
 }
 
 /// Check if an ARN matches a glob pattern (supports `*` wildcards).
-fn arn_matches_pattern(arn: &str, pattern: &str) -> bool {
+#[must_use]
+pub fn arn_matches_pattern(arn: &str, pattern: &str) -> bool {
     if pattern == "*" {
         return true;
     }

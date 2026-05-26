@@ -33,32 +33,11 @@ s3.put_object(Bucket='my-bucket', Key='my-key', Body=b'data')
 [[expected_comments]]
 path = "src/handler.py"
 line = 3
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `kms:GenerateDataKey` — needed for [Forward Access Session](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html) permissions
-- `s3-object-lambda:PutObject`
-- `s3:PutObject`
-- `s3:PutObjectAcl`
-- `s3:PutObjectLegalHold`
-- `s3:PutObjectRetention`
-- `s3:PutObjectTagging`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `kms:GenerateDataKey`, `s3-object-lambda:PutObject`, `s3:PutObject`, `s3:PutObjectAcl`, `s3:PutObjectLegalHold`, `s3:PutObjectRetention`, `s3:PutObjectTagging`"
 
 # Comment 2: removed permissions (get_object is gone), anchored to the removed line (3, LEFT side)
 [[expected_comments]]
 path = "src/handler.py"
 line = 3
 side = "LEFT"
-body = """
-✅ **IAM permissions no longer required after this change:**
-
-- `kms:Decrypt`
-- `s3-object-lambda:GetObject`
-- `s3:GetObject`
-- `s3:GetObjectLegalHold`
-- `s3:GetObjectRetention`
-- `s3:GetObjectTagging`
-- `s3:GetObjectVersion`"""
+body = "**No longer required:** `kms:Decrypt`, `s3-object-lambda:GetObject`, `s3:GetObject`, `s3:GetObjectLegalHold`, `s3:GetObjectRetention`, `s3:GetObjectTagging`, `s3:GetObjectVersion`"

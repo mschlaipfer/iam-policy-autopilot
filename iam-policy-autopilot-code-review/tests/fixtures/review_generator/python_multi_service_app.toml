@@ -75,57 +75,22 @@ if __name__ == "__main__":
 [[expected_comments]]
 path = "app.py"
 line = 6
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `kms:Decrypt`
-- `kms:GenerateDataKey`
-- `s3-object-lambda:PutObject`
-- `s3:PutObject`
-- `s3:PutObjectAcl`
-- `s3:PutObjectLegalHold`
-- `s3:PutObjectRetention`
-- `s3:PutObjectTagging`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `kms:Decrypt`, `kms:GenerateDataKey`, `s3-object-lambda:PutObject`, `s3:PutObject`, `s3:PutObjectAcl`, `s3:PutObjectLegalHold`, `s3:PutObjectRetention`, `s3:PutObjectTagging`"
 
 # Comment 2: client.get_secret_value on line 11
 [[expected_comments]]
 path = "app.py"
 line = 11
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `kms:Decrypt`
-- `secretsmanager:GetSecretValue`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `kms:Decrypt`, `secretsmanager:GetSecretValue`"
 
 # Comment 3: table.put_item on line 18
 [[expected_comments]]
 path = "app.py"
 line = 18
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `dynamodb:PutItem`
-- `dynamodb:WriteDataForReplication`
-- `kms:Decrypt`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `dynamodb:PutItem`, `dynamodb:WriteDataForReplication`, `kms:Decrypt`"
 
 # Comment 4: sqs.send_message on line 23
 [[expected_comments]]
 path = "app.py"
 line = 23
-body = """
-⚠️ **New IAM permissions required by this change:**
-
-- `kms:GenerateDataKey`
-- `sqs:SendMessage`
-
-> These permissions were detected via static analysis of the added code.
-> Review carefully before granting."""
+body = "**Requires:** `kms:GenerateDataKey`, `sqs:SendMessage`"

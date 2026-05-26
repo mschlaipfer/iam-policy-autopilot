@@ -39,6 +39,7 @@
 //!     base_files,
 //!     head_files,
 //!     diff: String::new(),
+//!     existing_policy: None,
 //! }).await?;
 //!
 //! let json = serde_json::to_string_pretty(&comments)?;
@@ -47,7 +48,9 @@
 //! # }
 //! ```
 
+pub mod policy_checker;
 pub mod review_generator;
 
 // Re-export the most commonly used public items at the crate root.
+pub use policy_checker::PolicyChecker;
 pub use review_generator::{generate_review, ReviewComment, ReviewInput};

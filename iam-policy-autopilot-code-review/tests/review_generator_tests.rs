@@ -117,6 +117,7 @@ async fn test_review_generator_fixture(
         base_files,
         head_files,
         diff: fixture.diff,
+        existing_policy: None,
     };
 
     let comments = generate_review(input)
