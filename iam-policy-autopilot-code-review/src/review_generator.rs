@@ -84,6 +84,10 @@ pub struct ReviewInput {
     pub existing_policy: Option<String>,
     /// Repo-relative path to the existing policy file (for linking in summary).
     pub policy_path: Option<String>,
+    /// Optional base (before) version of the policy (JSON string).
+    /// When provided alongside `existing_policy`, detects regressions: actions
+    /// allowed by the base policy but missing/denied in the head policy.
+    pub base_policy: Option<String>,
     /// Include a link to the IAM Policy Autopilot tool in the summary footer.
     pub include_tool_link: bool,
     /// Generate a suggested policy diff in the summary.
@@ -1041,8 +1045,33 @@ pub async fn generate_review(input: ReviewInput) -> Result<ReviewOutput> {
         .map(|(_, result)| result)
         .collect();
 
+    // Compute the global permission delta for the policy removal suggestion.
+    // Actions are only truly "removed" if they appear in the base set across all
+    // files but NOT in the head set across all files. This avoids false positives
+    // when code is moved between files.
+    let mut global_base_actions: BTreeSet<String> = BTreeSet::new();
+    let mut global_head_actions: BTreeSet<String> = BTreeSet::new();
+    for ((_, is_head), result) in &result_map {
+        let actions = extract_actions(result);
+        if *is_head {
+            global_head_actions.extend(actions);
+        } else {
+            global_base_actions.extend(actions);
+        }
+    }
+    let all_removed_actions: BTreeSet<String> = global_base_actions
+        .difference(&global_head_actions)
+        .cloned()
+        .collect();
+
     // ── Build summary body ────────────────────────────────────────────────────
-    let body = build_summary(&input, &comments, policy_checker.as_ref(), &head_results);
+    let body = build_summary(
+        &input,
+        &comments,
+        policy_checker.as_ref(),
+        &head_results,
+        &all_removed_actions,
+    );
 
     Ok(ReviewOutput { body, comments })
 }
@@ -1054,27 +1083,40 @@ fn build_summary(
     comments: &[ReviewComment],
     policy_checker: Option<&crate::policy_checker::PolicyChecker>,
     head_results: &[&GeneratePoliciesResult],
+    removed_actions: &BTreeSet<String>,
 ) -> String {
     if comments.is_empty() {
         return String::new();
     }
 
-    let mut summary = String::from("## IAM Policy Review\n\n");
-
-    let comment_count = comments.len();
-    let plural = if comment_count == 1 { "" } else { "s" };
-    summary.push_str(&format!(
-        "**{comment_count}** permission comment{plural} posted.\n"
-    ));
+    let mut summary = String::from("## IAM Policy Review\n");
 
     if let Some(policy_path) = &input.policy_path {
-        summary.push_str(&format!("\nPolicy: [`{policy_path}`]({policy_path})\n"));
+        let blob_prefix = std::env::var("GITHUB_BLOB_URL_PREFIX").ok();
+        if let Some(prefix) = &blob_prefix {
+            let url = format!("{prefix}/{policy_path}");
+            summary.push_str(&format!("\nComparing against [`{policy_path}`]({url})\n"));
+        } else {
+            summary.push_str(&format!("\nComparing against `{policy_path}`\n"));
+        }
     }
 
     if input.suggest_policy_changes {
         if let Some(suggestion) = build_policy_suggestion(policy_checker, head_results) {
             summary.push_str(&suggestion);
         }
+        if let Some(trimmed) =
+            build_policy_removal_suggestion(input.existing_policy.as_ref(), removed_actions)
+        {
+            summary.push_str(&trimmed);
+        }
+    }
+
+    // Detect policy regressions when both base and head policies are provided.
+    if let Some(regression) =
+        build_policy_regression_warning(input.base_policy.as_ref(), policy_checker, head_results)
+    {
+        summary.push_str(&regression);
     }
 
     if input.include_tool_link {
@@ -1200,6 +1242,142 @@ fn build_policy_suggestion(
     } else {
         Some(output)
     }
+}
+
+/// Build a suggested trimmed policy with removed actions stripped out.
+///
+/// Parses the existing policy, removes any actions that are no longer required,
+/// and outputs the result. Only shown when actions have been removed.
+#[allow(clippy::format_push_string)]
+fn build_policy_removal_suggestion(
+    existing_policy: Option<&String>,
+    removed_actions: &BTreeSet<String>,
+) -> Option<String> {
+    use iam_policy_autopilot_policy_generation::api::action_matches_pattern;
+
+    if removed_actions.is_empty() {
+        return None;
+    }
+    let policy_json: &str = existing_policy?;
+
+    let mut doc: serde_json::Value = serde_json::from_str(policy_json).ok()?;
+
+    let statements = doc.get_mut("Statement")?.as_array_mut()?;
+
+    // Remove matching actions from Allow statements.
+    statements.retain_mut(|stmt| {
+        let effect = stmt.get("Effect").and_then(|v| v.as_str()).unwrap_or("");
+        if effect != "Allow" {
+            return true;
+        }
+
+        let Some(action_val) = stmt.get_mut("Action") else {
+            return true;
+        };
+
+        match action_val {
+            serde_json::Value::String(s) => {
+                let should_remove = removed_actions
+                    .iter()
+                    .any(|removed| action_matches_pattern(removed, s));
+                !should_remove
+            }
+            serde_json::Value::Array(arr) => {
+                arr.retain(|a| {
+                    let Some(pattern) = a.as_str() else {
+                        return true;
+                    };
+                    !removed_actions
+                        .iter()
+                        .any(|removed| action_matches_pattern(removed, pattern))
+                });
+                !arr.is_empty()
+            }
+            _ => true,
+        }
+    });
+
+    let trimmed_json = serde_json::to_string_pretty(&doc).ok()?;
+
+    // Only show if the policy actually changed.
+    if trimmed_json
+        == serde_json::to_string_pretty(
+            &serde_json::from_str::<serde_json::Value>(policy_json).ok()?,
+        )
+        .ok()?
+    {
+        return None;
+    }
+
+    let mut section = String::new();
+    section.push_str(
+        "\n<details><summary>Suggested policy after removing unused actions</summary>\n\n",
+    );
+    section.push_str(
+        "These actions are no longer required by the analyzed code. If no other code \
+         paths use them, consider removing them from the policy.\n\n",
+    );
+    section.push_str("```json\n");
+    section.push_str(&trimmed_json);
+    section.push_str("\n```\n\n</details>\n");
+
+    Some(section)
+}
+
+/// Detect policy regressions: actions that were allowed by the base policy but
+/// are now missing or denied in the head policy. These represent potential runtime
+/// failures caused by the policy change.
+#[allow(clippy::format_push_string)]
+fn build_policy_regression_warning(
+    base_policy_json: Option<&String>,
+    head_checker: Option<&crate::policy_checker::PolicyChecker>,
+    head_results: &[&GeneratePoliciesResult],
+) -> Option<String> {
+    let base_json: &str = base_policy_json?;
+    let head_checker = head_checker?;
+
+    let base_checker = crate::policy_checker::PolicyChecker::from_json(base_json).ok()?;
+
+    // Collect all actions required by the head code.
+    let mut all_head_actions: BTreeSet<String> = BTreeSet::new();
+    for result in head_results {
+        for idx in 0..result.policies.len() {
+            all_head_actions.extend(extract_actions_for_policy(result, idx));
+        }
+    }
+
+    // Find actions that were allowed by the base policy but are no longer allowed
+    // (or are now denied) by the head policy.
+    let mut regressions: BTreeSet<String> = BTreeSet::new();
+    for action in &all_head_actions {
+        let base_status = base_checker.check_action(action);
+        let head_status = head_checker.check_action(action);
+
+        let was_ok = base_status.allowed || !base_status.denied;
+        let now_broken = !head_status.allowed || head_status.denied;
+        if was_ok && now_broken && !(base_status.is_missing() && head_status.is_missing()) {
+            regressions.insert(action.clone());
+        }
+    }
+
+    if regressions.is_empty() {
+        return None;
+    }
+
+    let list = regressions
+        .iter()
+        .map(|a| format!("`{a}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let mut section = String::new();
+    section.push_str("\n> [!CAUTION]\n");
+    section.push_str("> **Policy regression detected** — the following actions are required by the code but are no longer allowed by the updated policy:\n>\n");
+    section.push_str(&format!("> {list}\n>\n"));
+    section.push_str("> This policy change may cause runtime `AccessDenied` errors.\n");
+    section.push('\n');
+
+    Some(section)
 }
 
 #[cfg(test)]

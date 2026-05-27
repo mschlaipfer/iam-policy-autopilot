@@ -118,6 +118,7 @@ async fn test_review_generator_fixture(
         head_files,
         diff: fixture.diff,
         existing_policy: None,
+        base_policy: None,
         policy_path: None,
         include_tool_link: false,
         suggest_policy_changes: false,

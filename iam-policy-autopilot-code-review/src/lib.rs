@@ -40,6 +40,7 @@
 //!     head_files,
 //!     diff: String::new(),
 //!     existing_policy: None,
+//!     base_policy: None,
 //!     policy_path: None,
 //!     include_tool_link: false,
 //!     suggest_policy_changes: false,

@@ -568,9 +568,22 @@ omitted from the review output entirely."
             long = "policy-path",
             value_name = "REPO_PATH",
             long_help = "Repo-relative path to the existing policy file. When provided, \
-the summary includes a Markdown link to this path so reviewers can navigate to the policy."
+the summary includes a Markdown link to this path so reviewers can navigate to the policy. \
+If --base-policy is also provided, actions that were allowed by the base policy but are \
+no longer allowed by the head policy are flagged as potential regressions."
         )]
         policy_path: Option<String>,
+
+        /// Path to the base (before) version of the policy file
+        #[arg(
+            long = "base-policy",
+            value_name = "FILE",
+            long_help = "Path to the base (before) version of the policy JSON file. \
+When provided alongside --existing-policy, the tool detects policy regressions: actions \
+that were allowed by the base policy but are now missing or denied in the head policy. \
+These are flagged as potential breakages in the summary."
+        )]
+        base_policy: Option<PathBuf>,
 
         /// Include a link to IAM Policy Autopilot in the summary footer
         #[arg(long = "include-tool-link")]
@@ -831,6 +844,7 @@ async fn handle_generate_review(
     service_hints: Option<Vec<String>>,
     explain: bool,
     existing_policy: Option<PathBuf>,
+    base_policy: Option<PathBuf>,
     policy_path: Option<String>,
     include_tool_link: bool,
     suggest_policy_changes: bool,
@@ -857,6 +871,13 @@ async fn handle_generate_review(
         })
         .transpose()?;
 
+    let base_policy_json = base_policy
+        .map(|path| {
+            std::fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read base policy file {path:?}"))
+        })
+        .transpose()?;
+
     let output: ReviewOutput = generate_review(ReviewInput {
         region,
         account,
@@ -866,6 +887,7 @@ async fn handle_generate_review(
         head_files,
         diff,
         existing_policy: existing_policy_json,
+        base_policy: base_policy_json,
         policy_path,
         include_tool_link,
         suggest_policy_changes,
@@ -1042,6 +1064,7 @@ async fn main() {
             explain,
             existing_policy,
             policy_path,
+            base_policy,
             include_tool_link,
             suggest_policy_changes,
             filters,
@@ -1061,6 +1084,7 @@ async fn main() {
                 service_hints,
                 explain,
                 existing_policy,
+                base_policy,
                 policy_path,
                 include_tool_link,
                 suggest_policy_changes,
