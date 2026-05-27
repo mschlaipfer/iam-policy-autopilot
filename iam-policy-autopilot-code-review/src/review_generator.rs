@@ -1085,7 +1085,9 @@ fn build_summary(
     head_results: &[&GeneratePoliciesResult],
     removed_actions: &BTreeSet<String>,
 ) -> String {
-    if comments.is_empty() {
+    let has_regression = input.base_policy.is_some() && policy_checker.is_some();
+
+    if comments.is_empty() && !has_regression {
         return String::new();
     }
 
