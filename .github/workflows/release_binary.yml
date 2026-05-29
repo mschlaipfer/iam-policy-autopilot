@@ -1,0 +1,91 @@
+name: Release Binary
+
+# Triggered manually or when a release is published.
+# Builds the iam-policy-autopilot binary for all supported platforms
+# (Linux, Windows, macOS — x86_64 and aarch64) and uploads them to the release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload the binary to (e.g. v0.1.4)"
+        required: true
+
+permissions:
+  contents: write   # needed to upload release assets
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    # Guard: only run on the personal fork, never on the upstream repo.
+    if: github.repository == 'mschlaipfer/iam-policy-autopilot'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            use-zig: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            use-zig: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build release binary
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }} ${{ matrix.use-zig && '--zig' || '' }}
+          manylinux: auto
+
+      - name: Determine release tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package binary
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # maturin places the wheel in target/wheels/
+          WHEEL=$(find target/wheels -name '*.whl' | head -1)
+          python3 -m zipfile -e "$WHEEL" extracted/
+
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            BINARY="iam-policy-autopilot.exe"
+            ARCHIVE="iam-policy-autopilot-${TAG}-${{ matrix.target }}.zip"
+            find extracted -name "${BINARY}" -exec cp {} . \;
+            7z a "${ARCHIVE}" "${BINARY}"
+          else
+            BINARY="iam-policy-autopilot"
+            ARCHIVE="iam-policy-autopilot-${TAG}-${{ matrix.target }}.tar.gz"
+            find extracted -name "${BINARY}" -exec cp {} . \;
+            chmod +x "${BINARY}"
+            tar czf "${ARCHIVE}" "${BINARY}"
+          fi
+          echo "ARCHIVE=${ARCHIVE}" >> $GITHUB_ENV
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: ${{ env.ARCHIVE }}
