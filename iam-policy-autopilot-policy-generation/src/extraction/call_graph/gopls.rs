@@ -147,7 +147,7 @@ impl CallGraphBuilder for GoplsCallGraphBuilder {
         Ok(CallGraph::new(nodes, edges))
     }
 
-    async fn shutdown(self) -> Result<(), CallGraphError> {
+    async fn shutdown(self: Box<Self>) -> Result<(), CallGraphError> {
         self.client.shutdown().await?;
         Ok(())
     }
@@ -170,7 +170,7 @@ mod tests {
 
         let mut builder = GoplsCallGraphBuilder::new(&root).await.unwrap();
         let graph = builder.build(&root, &[root.join("main.go")]).await.unwrap();
-        builder.shutdown().await.unwrap();
+        Box::new(builder).shutdown().await.unwrap();
         graph
     }
 
