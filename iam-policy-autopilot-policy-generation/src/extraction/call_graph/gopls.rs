@@ -21,7 +21,7 @@ impl GoplsCallGraphBuilder {
             open_document_timeout: Duration::from_secs(30),
             hover_timeout: Duration::from_secs(30),
             shutdown_timeout: Duration::from_secs(5),
-            idle_timeout: Duration::from_secs(300),
+            idle_timeout: Duration::from_mins(5),
             // gopls returns Flat (SymbolInformation) by default, which lacks selection_range.
             // Hierarchical mode gives us DocumentSymbol with selection_range — needed to
             // position prepare_call_hierarchy on the function name, not the `func` keyword.

@@ -97,7 +97,7 @@ impl Default for LspClientOptions {
             initialize_timeout: Duration::from_secs(10),
             hover_timeout: Duration::from_secs(5),
             shutdown_timeout: Duration::from_secs(2),
-            idle_timeout: Duration::from_secs(120),
+            idle_timeout: Duration::from_mins(2),
             capabilities: None,
         }
     }

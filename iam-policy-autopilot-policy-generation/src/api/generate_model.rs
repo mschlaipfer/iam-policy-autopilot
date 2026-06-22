@@ -46,7 +46,7 @@ pub async fn generate_model(config: &GenerateModelConfig) -> Result<ExternalLibr
     // Detect language and resolve conventions
     let language = {
         let extractor = crate::ExtractionEngine::new();
-        let paths: Vec<&Path> = source_files.iter().map(|p| p.as_path()).collect();
+        let paths: Vec<&Path> = source_files.iter().map(PathBuf::as_path).collect();
         extractor.detect_and_validate_language(&paths)?
     };
 
@@ -158,9 +158,8 @@ fn resolve_entry_points(specs: &[String], nodes: &[FunctionNode]) -> Result<Vec<
 
         if matching_files.len() > 1 {
             anyhow::bail!(
-                "Ambiguous file path '{file}' in entry point '{spec}', matches multiple files: {:?}. \
-                 Use a longer path to disambiguate.",
-                matching_files
+                "Ambiguous file path '{file}' in entry point '{spec}', matches multiple files: \
+                 {matching_files:?}. Use a longer path to disambiguate."
             );
         }
 
