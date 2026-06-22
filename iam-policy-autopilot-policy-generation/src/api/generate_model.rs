@@ -22,6 +22,8 @@ pub struct GenerateModelConfig {
     pub library_name: String,
     /// Entry points in `file:line:column` format (1-based).
     pub entry_points: Vec<String>,
+    /// Entry points as language-specific symbols (Go: `pkg.func`).
+    pub entry_point_symbols: Vec<String>,
     /// Optional service hints to filter SDK calls to specific AWS services.
     pub service_hints: Option<Vec<String>>,
 }
@@ -69,7 +71,7 @@ pub async fn generate_model(config: &GenerateModelConfig) -> Result<ExternalLibr
         .await
         .context("Failed to build call graph")?;
 
-    let entry_nodes = if config.entry_points.is_empty() {
+    let entry_nodes = if config.entry_points.is_empty() && config.entry_point_symbols.is_empty() {
         graph
             .nodes()
             .iter()
@@ -77,7 +79,14 @@ pub async fn generate_model(config: &GenerateModelConfig) -> Result<ExternalLibr
             .cloned()
             .collect()
     } else {
-        resolve_entry_points(&config.entry_points, graph.nodes())?
+        let mut nodes = resolve_entry_points(&config.entry_points, graph.nodes())?;
+        for spec in &config.entry_point_symbols {
+            let node = conventions
+                .resolve_symbol(spec, graph.nodes())
+                .with_context(|| format!("Failed to resolve entry point symbol '{spec}'"))?;
+            nodes.push(node.clone());
+        }
+        nodes
     };
 
     let extracted = {
