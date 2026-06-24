@@ -7864,10 +7864,6 @@
         {
           "service": "chime-sdk-voice",
           "operation": "UpdateGlobalSettings"
-        },
-        {
-          "service": "chime",
-          "operation": "UpdateGlobalSettings"
         }
       ]
     },
@@ -7879,10 +7875,6 @@
       "sdk_operations": [
         {
           "service": "chime-sdk-voice",
-          "operation": "UpdateGlobalSettings"
-        },
-        {
-          "service": "chime",
           "operation": "UpdateGlobalSettings"
         }
       ]
@@ -19183,6 +19175,10 @@
       "sdk_operations": [
         {
           "service": "ec2",
+          "operation": "CopyImage"
+        },
+        {
+          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
@@ -19196,10 +19192,6 @@
         {
           "service": "ec2",
           "operation": "EnableImageDeprecation"
-        },
-        {
-          "service": "ec2",
-          "operation": "CopyImage"
         },
         {
           "service": "ec2",
@@ -19839,15 +19831,15 @@
       "sdk_operations": [
         {
           "service": "ec2",
+          "operation": "DeleteRoute"
+        },
+        {
+          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
-        },
-        {
-          "service": "ec2",
-          "operation": "DeleteRoute"
         },
         {
           "service": "ec2",
@@ -20287,19 +20279,19 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "DeleteTags"
-        },
-        {
-          "service": "ec2",
-          "operation": "CreateTags"
-        },
-        {
-          "service": "ec2",
           "operation": "ImportSnapshot"
         },
         {
           "service": "ec2",
           "operation": "ModifySnapshotTier"
+        },
+        {
+          "service": "ec2",
+          "operation": "DeleteTags"
+        },
+        {
+          "service": "ec2",
+          "operation": "CreateTags"
         },
         {
           "service": "ec2",
@@ -22983,11 +22975,11 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "DisassociateRouteTable"
+          "operation": "DeleteRouteTable"
         },
         {
           "service": "ec2",
-          "operation": "DeleteRouteTable"
+          "operation": "DisassociateRouteTable"
         },
         {
           "service": "ec2",
@@ -24315,10 +24307,6 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "DisassociateTransitGatewayMulticastDomain"
-        },
-        {
-          "service": "ec2",
           "operation": "DeregisterTransitGatewayMulticastGroupMembers"
         },
         {
@@ -24328,6 +24316,10 @@
         {
           "service": "ec2",
           "operation": "DeleteTransitGatewayMulticastDomain"
+        },
+        {
+          "service": "ec2",
+          "operation": "DisassociateTransitGatewayMulticastDomain"
         },
         {
           "service": "ec2",
@@ -24991,15 +24983,15 @@
       "sdk_operations": [
         {
           "service": "ec2",
+          "operation": "AcceptTransitGatewayVpcAttachment"
+        },
+        {
+          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
-        },
-        {
-          "service": "ec2",
-          "operation": "AcceptTransitGatewayVpcAttachment"
         },
         {
           "service": "ec2",
@@ -29714,10 +29706,6 @@
           "operation": "DescribeElasticsearchDomain"
         },
         {
-          "service": "opensearch",
-          "operation": "GetUpgradeStatus"
-        },
-        {
           "service": "es",
           "operation": "GetUpgradeStatus"
         }
@@ -29730,16 +29718,8 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "opensearch",
-          "operation": "CreateVpcEndpoint"
-        },
-        {
           "service": "es",
           "operation": "CreateVpcEndpoint"
-        },
-        {
-          "service": "opensearch",
-          "operation": "DescribeVpcEndpoints"
         },
         {
           "service": "es",
@@ -29754,16 +29734,8 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "opensearch",
-          "operation": "DeleteVpcEndpoint"
-        },
-        {
           "service": "es",
           "operation": "DeleteVpcEndpoint"
-        },
-        {
-          "service": "opensearch",
-          "operation": "DescribeVpcEndpoints"
         },
         {
           "service": "es",
@@ -29778,10 +29750,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "opensearch",
-          "operation": "DescribeVpcEndpoints"
-        },
-        {
           "service": "es",
           "operation": "DescribeVpcEndpoints"
         }
@@ -29794,16 +29762,8 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "opensearch",
-          "operation": "UpdateVpcEndpoint"
-        },
-        {
           "service": "es",
           "operation": "UpdateVpcEndpoint"
-        },
-        {
-          "service": "opensearch",
-          "operation": "DescribeVpcEndpoints"
         },
         {
           "service": "es",
@@ -29818,11 +29778,11 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "codepipeline",
+          "service": "datapipeline",
           "operation": "CreatePipeline"
         },
         {
-          "service": "datapipeline",
+          "service": "codepipeline",
           "operation": "CreatePipeline"
         },
         {
@@ -30723,6 +30683,10 @@
         },
         {
           "service": "elbv2",
+          "operation": "ModifyCapacityReservation"
+        },
+        {
+          "service": "elbv2",
           "operation": "DescribeLoadBalancerAttributes"
         },
         {
@@ -30792,6 +30756,10 @@
         {
           "service": "elbv2",
           "operation": "ModifyLoadBalancerAttributes"
+        },
+        {
+          "service": "elbv2",
+          "operation": "ModifyCapacityReservation"
         },
         {
           "service": "elbv2",
@@ -32190,19 +32158,15 @@
           "operation": "GetProject"
         },
         {
-          "service": "devicefarm",
-          "operation": "GetProject"
-        },
-        {
           "service": "datazone",
           "operation": "GetProject"
         },
         {
-          "service": "databrew",
-          "operation": "CreateProject"
+          "service": "devicefarm",
+          "operation": "GetProject"
         },
         {
-          "service": "codebuild",
+          "service": "codecatalyst",
           "operation": "CreateProject"
         },
         {
@@ -32210,11 +32174,15 @@
           "operation": "CreateProject"
         },
         {
-          "service": "codecatalyst",
+          "service": "codebuild",
           "operation": "CreateProject"
         },
         {
-          "service": "devicefarm",
+          "service": "databrew",
+          "operation": "CreateProject"
+        },
+        {
+          "service": "datazone",
           "operation": "CreateProject"
         },
         {
@@ -32222,7 +32190,7 @@
           "operation": "CreateProject"
         },
         {
-          "service": "datazone",
+          "service": "devicefarm",
           "operation": "CreateProject"
         },
         {
@@ -32242,11 +32210,11 @@
           "operation": "GetProject"
         },
         {
-          "service": "devicefarm",
+          "service": "datazone",
           "operation": "GetProject"
         },
         {
-          "service": "datazone",
+          "service": "devicefarm",
           "operation": "GetProject"
         }
       ]
@@ -32262,11 +32230,11 @@
           "operation": "GetProject"
         },
         {
-          "service": "devicefarm",
+          "service": "datazone",
           "operation": "GetProject"
         },
         {
-          "service": "datazone",
+          "service": "devicefarm",
           "operation": "GetProject"
         }
       ]
@@ -32282,11 +32250,11 @@
           "operation": "GetProject"
         },
         {
-          "service": "devicefarm",
+          "service": "datazone",
           "operation": "GetProject"
         },
         {
-          "service": "datazone",
+          "service": "devicefarm",
           "operation": "GetProject"
         }
       ]
@@ -36599,11 +36567,11 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "AddUserToGroup"
+          "operation": "GetGroup"
         },
         {
           "service": "iam",
-          "operation": "GetGroup"
+          "operation": "AddUserToGroup"
         }
       ]
     },
@@ -36639,15 +36607,15 @@
       "sdk_operations": [
         {
           "service": "iam",
+          "operation": "GetGroup"
+        },
+        {
+          "service": "iam",
           "operation": "AddUserToGroup"
         },
         {
           "service": "iam",
           "operation": "RemoveUserFromGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "GetGroup"
         }
       ]
     },
@@ -45787,19 +45755,19 @@
       "sdk_operations": [
         {
           "service": "logs",
-          "operation": "PutDestination"
-        },
-        {
-          "service": "logs",
-          "operation": "DescribeDestinations"
-        },
-        {
-          "service": "logs",
           "operation": "UntagResource"
         },
         {
           "service": "logs",
           "operation": "TagResource"
+        },
+        {
+          "service": "logs",
+          "operation": "PutDestination"
+        },
+        {
+          "service": "logs",
+          "operation": "DescribeDestinations"
         }
       ]
     },
@@ -48599,11 +48567,11 @@
         },
         {
           "service": "networkmanager",
-          "operation": "GetConnectAttachment"
+          "operation": "GetSiteToSiteVpnAttachment"
         },
         {
           "service": "networkmanager",
-          "operation": "GetSiteToSiteVpnAttachment"
+          "operation": "GetConnectAttachment"
         },
         {
           "service": "networkmanager",
@@ -48643,11 +48611,11 @@
       "sdk_operations": [
         {
           "service": "networkmanager",
-          "operation": "GetConnectAttachment"
+          "operation": "GetSiteToSiteVpnAttachment"
         },
         {
           "service": "networkmanager",
-          "operation": "GetSiteToSiteVpnAttachment"
+          "operation": "GetConnectAttachment"
         },
         {
           "service": "networkmanager",
@@ -49119,14 +49087,6 @@
         },
         {
           "service": "networkmanager",
-          "operation": "DeleteGlobalNetwork"
-        },
-        {
-          "service": "networkmanager",
-          "operation": "DescribeGlobalNetworks"
-        },
-        {
-          "service": "networkmanager",
           "operation": "DisassociateTransitGatewayConnectPeer"
         },
         {
@@ -49140,6 +49100,14 @@
         {
           "service": "networkmanager",
           "operation": "GetTransitGatewayRegistrations"
+        },
+        {
+          "service": "networkmanager",
+          "operation": "DeleteGlobalNetwork"
+        },
+        {
+          "service": "networkmanager",
+          "operation": "DescribeGlobalNetworks"
         }
       ]
     },
@@ -51402,10 +51370,6 @@
           "operation": "UpdateAnalysis"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "quicksight",
           "operation": "UpdateAnalysisPermissions"
         },
@@ -51492,10 +51456,6 @@
         {
           "service": "quicksight",
           "operation": "UpdateDashboardPublishedVersion"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "quicksight",
@@ -51586,10 +51546,6 @@
           "operation": "UpdateDataSet"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "quicksight",
           "operation": "UpdateDataSetPermissions"
         },
@@ -51674,10 +51630,6 @@
           "operation": "UpdateDataSource"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "quicksight",
           "operation": "UpdateDataSourcePermissions"
         },
@@ -51748,10 +51700,6 @@
         {
           "service": "quicksight",
           "operation": "UpdateFolder"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "quicksight",
@@ -51930,10 +51878,6 @@
           "operation": "UpdateTemplate"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "quicksight",
           "operation": "UpdateTemplatePermissions"
         },
@@ -52008,10 +51952,6 @@
         {
           "service": "quicksight",
           "operation": "UpdateTheme"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "quicksight",
@@ -52312,18 +52252,6 @@
         {
           "service": "ram",
           "operation": "EnableSharingWithAwsOrganization"
-        }
-      ]
-    },
-    {
-      "module_path": "ram",
-      "class_name": null,
-      "function_name": "resourceSharingWithOrganizationDelete",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "iam",
-          "operation": "DeleteServiceLinkedRole"
         }
       ]
     },
@@ -52694,10 +52622,6 @@
           "operation": "CreateDBClusterParameterGroup"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "rds",
           "operation": "ModifyDBClusterParameterGroup"
         },
@@ -52749,10 +52673,6 @@
       "function_name": "resourceClusterParameterGroupUpdate",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        },
         {
           "service": "rds",
           "operation": "ModifyDBClusterParameterGroup"
@@ -52890,10 +52810,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "rds",
           "operation": "ModifyDBClusterSnapshotAttribute"
         },
@@ -52916,10 +52832,6 @@
         {
           "service": "rds",
           "operation": "DescribeGlobalClusters"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rds",
@@ -53068,10 +52980,6 @@
         {
           "service": "rds",
           "operation": "ModifyEventSubscription"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rds",
@@ -53334,48 +53242,12 @@
           "operation": "PromoteReadReplica"
         },
         {
-          "service": "codedeploy",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "apigateway",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "amplify",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "launch-wizard",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "greengrass",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "greengrassv2",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "apigatewayv2",
-          "operation": "CreateDeployment"
-        },
-        {
-          "service": "m2",
-          "operation": "CreateDeployment"
-        },
-        {
           "service": "rds",
           "operation": "DeleteBlueGreenDeployment"
         },
         {
           "service": "rds",
           "operation": "DeleteDBInstance"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rds",
@@ -53400,10 +53272,6 @@
         {
           "service": "rds",
           "operation": "CreateOptionGroup"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rds",
@@ -53446,10 +53314,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "rds",
           "operation": "ModifyOptionGroup"
         },
@@ -53468,10 +53332,6 @@
         {
           "service": "rds",
           "operation": "CreateDBParameterGroup"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rds",
@@ -53525,10 +53385,6 @@
       "function_name": "resourceParameterGroupUpdate",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        },
         {
           "service": "rds",
           "operation": "ModifyDBParameterGroup"
@@ -53726,10 +53582,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "rds",
           "operation": "ModifyDBProxy"
         },
@@ -53838,10 +53690,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "rds",
           "operation": "ModifyDBSnapshotAttribute"
         },
@@ -53913,10 +53761,6 @@
       "function_name": "resourceSnapshotUpdate",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        },
         {
           "service": "rds",
           "operation": "ModifyDBSnapshotAttribute"
@@ -54130,10 +53974,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "redshift",
           "operation": "ModifyClusterIamRoles"
         },
@@ -54230,10 +54070,6 @@
           "operation": "ModifyCluster"
         },
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "redshift",
           "operation": "ModifyClusterIamRoles"
         },
@@ -54298,10 +54134,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "redshift",
           "operation": "ModifyEndpointAccess"
         },
@@ -54357,10 +54189,6 @@
       "function_name": "resourceEndpointAuthorizationUpdate",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        },
         {
           "service": "redshift",
           "operation": "AuthorizeEndpointAccess"
@@ -54593,10 +54421,6 @@
       "function_name": "resourceParameterGroupUpdate",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        },
         {
           "service": "redshift",
           "operation": "ModifyClusterParameterGroup"
@@ -55026,15 +54850,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "dynamodb",
-          "operation": "ExecuteStatement"
-        },
-        {
           "service": "redshift-data",
-          "operation": "ExecuteStatement"
-        },
-        {
-          "service": "rds-data",
           "operation": "ExecuteStatement"
         },
         {
@@ -55066,10 +54882,6 @@
           "operation": "CreateEndpointAccess"
         },
         {
-          "service": "redshift",
-          "operation": "CreateEndpointAccess"
-        },
-        {
           "service": "redshift-serverless",
           "operation": "GetEndpointAccess"
         }
@@ -55083,10 +54895,6 @@
       "sdk_operations": [
         {
           "service": "redshift-serverless",
-          "operation": "DeleteEndpointAccess"
-        },
-        {
-          "service": "redshift",
           "operation": "DeleteEndpointAccess"
         },
         {
@@ -55134,23 +54942,7 @@
           "operation": "CreateNamespace"
         },
         {
-          "service": "s3tables",
-          "operation": "CreateNamespace"
-        },
-        {
-          "service": "quicksight",
-          "operation": "CreateNamespace"
-        },
-        {
           "service": "redshift-serverless",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "s3tables",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "servicediscovery",
           "operation": "GetNamespace"
         }
       ]
@@ -55168,14 +54960,6 @@
         {
           "service": "redshift-serverless",
           "operation": "GetNamespace"
-        },
-        {
-          "service": "s3tables",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "servicediscovery",
-          "operation": "GetNamespace"
         }
       ]
     },
@@ -55187,14 +54971,6 @@
       "sdk_operations": [
         {
           "service": "redshift-serverless",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "s3tables",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "servicediscovery",
           "operation": "GetNamespace"
         }
       ]
@@ -55212,14 +54988,6 @@
         {
           "service": "redshift-serverless",
           "operation": "GetNamespace"
-        },
-        {
-          "service": "s3tables",
-          "operation": "GetNamespace"
-        },
-        {
-          "service": "servicediscovery",
-          "operation": "GetNamespace"
         }
       ]
     },
@@ -55230,91 +54998,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "cloudhsmv2",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "dynamodb",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "cloudtrail",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "codebuild",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "comprehend",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "bedrock",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "lexv2-models",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "kinesis",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "marketplace-catalog",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "networkmanager",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "osis",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "cloudfront",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
           "service": "redshift-serverless",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "logs",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "redshift",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "payment-cryptography",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "bedrock-agentcore-control",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "lookoutequipment",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "network-firewall",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "pinpoint-sms-voice-v2",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "vpc-lattice",
-          "operation": "DeleteResourcePolicy"
-        },
-        {
-          "service": "glue",
           "operation": "DeleteResourcePolicy"
         }
       ]
@@ -55326,227 +55010,11 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "cloudhsmv2",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "amp",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "dynamodb",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "cloudtrail",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "codebuild",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "migration-hub-refactor-spaces",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "comprehend",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "bedrock",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "kinesis",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "organizations",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "marketplace-catalog",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "networkmanager",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "osis",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "cloudfront",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "rum",
-          "operation": "PutResourcePolicy"
-        },
-        {
           "service": "redshift-serverless",
           "operation": "PutResourcePolicy"
         },
         {
-          "service": "logs",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "redshift",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "payment-cryptography",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "schemas",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "bedrock-agentcore-control",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "lookoutequipment",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "network-firewall",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "ssm-incidents",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "pinpoint-sms-voice-v2",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "secretsmanager",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "xray",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "vpc-lattice",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "ssm",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "glue",
-          "operation": "PutResourcePolicy"
-        },
-        {
-          "service": "bcm-dashboards",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudhsmv2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "elbv2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "billing",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "dynamodb",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudtrail",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "codebuild",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "migration-hub-refactor-spaces",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "bedrock",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "kinesis",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "mpa",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "marketplace-catalog",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "networkmanager",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "osis",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudfront",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "route53-recovery-control-config",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "rum",
-          "operation": "GetResourcePolicy"
-        },
-        {
           "service": "redshift-serverless",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "redshift",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "payment-cryptography",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "schemas",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "bedrock-agentcore-control",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "pinpoint-sms-voice-v2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "secretsmanager",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "vpc-lattice",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "glue",
           "operation": "GetResourcePolicy"
         }
       ]
@@ -55558,107 +55026,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "bcm-dashboards",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudhsmv2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "elbv2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "billing",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "dynamodb",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudtrail",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "codebuild",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "migration-hub-refactor-spaces",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "bedrock",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "kinesis",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "mpa",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "marketplace-catalog",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "networkmanager",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "osis",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "cloudfront",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "route53-recovery-control-config",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "rum",
-          "operation": "GetResourcePolicy"
-        },
-        {
           "service": "redshift-serverless",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "redshift",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "payment-cryptography",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "schemas",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "bedrock-agentcore-control",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "pinpoint-sms-voice-v2",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "secretsmanager",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "vpc-lattice",
-          "operation": "GetResourcePolicy"
-        },
-        {
-          "service": "glue",
           "operation": "GetResourcePolicy"
         }
       ]
@@ -55670,35 +55038,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "fsx",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "memorydb",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "elasticache",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "ds",
-          "operation": "CreateSnapshot"
-        },
-        {
           "service": "redshift-serverless",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "simspaceweaver",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "storagegateway",
-          "operation": "CreateSnapshot"
-        },
-        {
-          "service": "ec2",
           "operation": "CreateSnapshot"
         },
         {
@@ -55713,14 +55053,6 @@
       "function_name": "resourceSnapshotDelete",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "memorydb",
-          "operation": "DeleteSnapshot"
-        },
-        {
-          "service": "elasticache",
-          "operation": "DeleteSnapshot"
-        },
         {
           "service": "redshift-serverless",
           "operation": "DeleteSnapshot"
@@ -55750,10 +55082,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "fsx",
-          "operation": "UpdateSnapshot"
-        },
-        {
           "service": "redshift-serverless",
           "operation": "UpdateSnapshot"
         },
@@ -55774,10 +55102,6 @@
           "operation": "CreateUsageLimit"
         },
         {
-          "service": "redshift",
-          "operation": "CreateUsageLimit"
-        },
-        {
           "service": "redshift-serverless",
           "operation": "GetUsageLimit"
         }
@@ -55791,10 +55115,6 @@
       "sdk_operations": [
         {
           "service": "redshift-serverless",
-          "operation": "DeleteUsageLimit"
-        },
-        {
-          "service": "redshift",
           "operation": "DeleteUsageLimit"
         }
       ]
@@ -55878,10 +55198,6 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "route53",
-          "operation": "GetChange"
-        },
-        {
           "service": "redshift-serverless",
           "operation": "UpdateWorkgroup"
         },
@@ -55898,43 +55214,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "identitystore",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "greengrass",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "cognito-idp",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "ds-data",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "synthetics",
-          "operation": "CreateGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "xray",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "workmail",
-          "operation": "CreateGroup"
-        },
-        {
-          "service": "quicksight",
           "operation": "CreateGroup"
         },
         {
@@ -55942,31 +55222,7 @@
           "operation": "GetGroupQuery"
         },
         {
-          "service": "greengrass",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "cognito-idp",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "qbusiness",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "synthetics",
-          "operation": "GetGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "xray",
           "operation": "GetGroup"
         },
         {
@@ -55982,15 +55238,7 @@
       "call_type": "function",
       "sdk_operations": [
         {
-          "service": "iam",
-          "operation": "DeleteGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "DeleteGroup"
-        },
-        {
-          "service": "xray",
           "operation": "DeleteGroup"
         }
       ]
@@ -56006,31 +55254,7 @@
           "operation": "GetGroupQuery"
         },
         {
-          "service": "greengrass",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "cognito-idp",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "qbusiness",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "synthetics",
-          "operation": "GetGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "xray",
           "operation": "GetGroup"
         },
         {
@@ -56050,39 +55274,7 @@
           "operation": "GetGroupQuery"
         },
         {
-          "service": "identitystore",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "greengrass",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "cognito-idp",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "ds-data",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "UpdateGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "xray",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "workmail",
-          "operation": "UpdateGroup"
-        },
-        {
-          "service": "quicksight",
           "operation": "UpdateGroup"
         },
         {
@@ -56094,31 +55286,7 @@
           "operation": "PutGroupConfiguration"
         },
         {
-          "service": "greengrass",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "cognito-idp",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "qbusiness",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "iam",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "synthetics",
-          "operation": "GetGroup"
-        },
-        {
           "service": "resource-groups",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "xray",
           "operation": "GetGroup"
         },
         {
@@ -56138,10 +55306,6 @@
           "operation": "GroupResources"
         },
         {
-          "service": "synthetics",
-          "operation": "ListGroupResources"
-        },
-        {
           "service": "resource-groups",
           "operation": "ListGroupResources"
         }
@@ -56158,10 +55322,6 @@
           "operation": "UngroupResources"
         },
         {
-          "service": "synthetics",
-          "operation": "ListGroupResources"
-        },
-        {
           "service": "resource-groups",
           "operation": "ListGroupResources"
         }
@@ -56173,10 +55333,6 @@
       "function_name": "resourceResourceRead",
       "call_type": "function",
       "sdk_operations": [
-        {
-          "service": "synthetics",
-          "operation": "ListGroupResources"
-        },
         {
           "service": "resource-groups",
           "operation": "ListGroupResources"
@@ -56232,10 +55388,6 @@
         {
           "service": "rolesanywhere",
           "operation": "UpdateProfile"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rolesanywhere",
@@ -56300,10 +55452,6 @@
         {
           "service": "rolesanywhere",
           "operation": "UpdateTrustAnchor"
-        },
-        {
-          "service": "route53",
-          "operation": "GetChange"
         },
         {
           "service": "rolesanywhere",
@@ -58675,7 +57823,7 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketCors"
+          "operation": "GetBucketPolicy"
         },
         {
           "service": "s3",
@@ -58683,11 +57831,15 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAcl"
+          "operation": "GetBucketAccelerateConfiguration"
         },
         {
           "service": "s3",
-          "operation": "GetBucketEncryption"
+          "operation": "GetBucketCors"
+        },
+        {
+          "service": "s3",
+          "operation": "GetObjectLockConfiguration"
         },
         {
           "service": "s3",
@@ -58695,7 +57847,15 @@
         },
         {
           "service": "s3",
-          "operation": "GetObjectLockConfiguration"
+          "operation": "GetBucketEncryption"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketLogging"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketAcl"
         },
         {
           "service": "s3",
@@ -58711,27 +57871,15 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAccelerateConfiguration"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketPolicy"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketLogging"
-        },
-        {
-          "service": "s3",
           "operation": "GetBucketWebsite"
         },
         {
           "service": "s3",
-          "operation": "GetBucketLifecycleConfiguration"
+          "operation": "GetBucketReplication"
         },
         {
           "service": "s3",
-          "operation": "GetBucketReplication"
+          "operation": "GetBucketLifecycleConfiguration"
         },
         {
           "service": "s3",
@@ -59411,7 +58559,7 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketCors"
+          "operation": "GetBucketPolicy"
         },
         {
           "service": "s3",
@@ -59419,15 +58567,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAcl"
+          "operation": "GetBucketAccelerateConfiguration"
         },
         {
           "service": "s3",
-          "operation": "GetBucketEncryption"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketVersioning"
+          "operation": "GetBucketCors"
         },
         {
           "service": "s3",
@@ -59435,11 +58579,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAccelerateConfiguration"
+          "operation": "GetBucketVersioning"
         },
         {
           "service": "s3",
-          "operation": "GetBucketPolicy"
+          "operation": "GetBucketEncryption"
         },
         {
           "service": "s3",
@@ -59447,15 +58591,19 @@
         },
         {
           "service": "s3",
+          "operation": "GetBucketAcl"
+        },
+        {
+          "service": "s3",
           "operation": "GetBucketWebsite"
         },
         {
           "service": "s3",
-          "operation": "GetBucketLifecycleConfiguration"
+          "operation": "GetBucketReplication"
         },
         {
           "service": "s3",
-          "operation": "GetBucketReplication"
+          "operation": "GetBucketLifecycleConfiguration"
         },
         {
           "service": "s3",
@@ -59643,7 +58791,7 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketCors"
+          "operation": "GetBucketPolicy"
         },
         {
           "service": "s3",
@@ -59651,15 +58799,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAcl"
+          "operation": "GetBucketAccelerateConfiguration"
         },
         {
           "service": "s3",
-          "operation": "GetBucketEncryption"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketVersioning"
+          "operation": "GetBucketCors"
         },
         {
           "service": "s3",
@@ -59667,11 +58811,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAccelerateConfiguration"
+          "operation": "GetBucketVersioning"
         },
         {
           "service": "s3",
-          "operation": "GetBucketPolicy"
+          "operation": "GetBucketEncryption"
         },
         {
           "service": "s3",
@@ -59679,15 +58823,19 @@
         },
         {
           "service": "s3",
+          "operation": "GetBucketAcl"
+        },
+        {
+          "service": "s3",
           "operation": "GetBucketWebsite"
         },
         {
           "service": "s3",
-          "operation": "GetBucketLifecycleConfiguration"
+          "operation": "GetBucketReplication"
         },
         {
           "service": "s3",
-          "operation": "GetBucketReplication"
+          "operation": "GetBucketLifecycleConfiguration"
         },
         {
           "service": "s3",
