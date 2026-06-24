@@ -19175,15 +19175,15 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "CopyImage"
-        },
-        {
-          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
+        },
+        {
+          "service": "ec2",
+          "operation": "CopyImage"
         },
         {
           "service": "ec2",
@@ -19831,15 +19831,15 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "DeleteRoute"
-        },
-        {
-          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
+        },
+        {
+          "service": "ec2",
+          "operation": "DeleteRoute"
         },
         {
           "service": "ec2",
@@ -19995,10 +19995,6 @@
         },
         {
           "service": "ec2",
-          "operation": "CreateDefaultVpc"
-        },
-        {
-          "service": "ec2",
           "operation": "ModifyVpcAttribute"
         },
         {
@@ -20008,6 +20004,10 @@
         {
           "service": "ec2",
           "operation": "AssociateVpcCidrBlock"
+        },
+        {
+          "service": "ec2",
+          "operation": "CreateDefaultVpc"
         },
         {
           "service": "ec2",
@@ -20279,19 +20279,19 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "ImportSnapshot"
-        },
-        {
-          "service": "ec2",
-          "operation": "ModifySnapshotTier"
-        },
-        {
-          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
+        },
+        {
+          "service": "ec2",
+          "operation": "ImportSnapshot"
+        },
+        {
+          "service": "ec2",
+          "operation": "ModifySnapshotTier"
         },
         {
           "service": "ec2",
@@ -22975,11 +22975,11 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "DeleteRouteTable"
+          "operation": "DisassociateRouteTable"
         },
         {
           "service": "ec2",
-          "operation": "DisassociateRouteTable"
+          "operation": "DeleteRouteTable"
         },
         {
           "service": "ec2",
@@ -23403,11 +23403,11 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "RequestSpotFleet"
+          "operation": "DescribeSpotFleetRequestHistory"
         },
         {
           "service": "ec2",
-          "operation": "DescribeSpotFleetRequestHistory"
+          "operation": "RequestSpotFleet"
         },
         {
           "service": "ec2",
@@ -23427,11 +23427,11 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "CancelSpotFleetRequests"
+          "operation": "DescribeSpotFleetInstances"
         },
         {
           "service": "ec2",
-          "operation": "DescribeSpotFleetInstances"
+          "operation": "CancelSpotFleetRequests"
         }
       ]
     },
@@ -24983,15 +24983,15 @@
       "sdk_operations": [
         {
           "service": "ec2",
-          "operation": "AcceptTransitGatewayVpcAttachment"
-        },
-        {
-          "service": "ec2",
           "operation": "DeleteTags"
         },
         {
           "service": "ec2",
           "operation": "CreateTags"
+        },
+        {
+          "service": "ec2",
+          "operation": "AcceptTransitGatewayVpcAttachment"
         },
         {
           "service": "ec2",
@@ -29772,62 +29772,6 @@
       ]
     },
     {
-      "module_path": "elastictranscoder",
-      "class_name": null,
-      "function_name": "resourcePipelineCreate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "datapipeline",
-          "operation": "CreatePipeline"
-        },
-        {
-          "service": "codepipeline",
-          "operation": "CreatePipeline"
-        },
-        {
-          "service": "osis",
-          "operation": "CreatePipeline"
-        },
-        {
-          "service": "sagemaker",
-          "operation": "CreatePipeline"
-        }
-      ]
-    },
-    {
-      "module_path": "elastictranscoder",
-      "class_name": null,
-      "function_name": "resourcePipelineUpdate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "codepipeline",
-          "operation": "UpdatePipeline"
-        },
-        {
-          "service": "osis",
-          "operation": "UpdatePipeline"
-        },
-        {
-          "service": "sagemaker",
-          "operation": "UpdatePipeline"
-        }
-      ]
-    },
-    {
-      "module_path": "elastictranscoder",
-      "class_name": null,
-      "function_name": "resourcePresetCreate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "mediaconvert",
-          "operation": "CreatePreset"
-        }
-      ]
-    },
-    {
       "module_path": "elb",
       "class_name": null,
       "function_name": "resourceAppCookieStickinessPolicyCreate",
@@ -32132,170 +32076,6 @@
         {
           "service": "events",
           "operation": "PutTargets"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceFeatureUpdate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "route53",
-          "operation": "GetChange"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceProjectCreate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "codecatalyst",
-          "operation": "GetProject"
-        },
-        {
-          "service": "datazone",
-          "operation": "GetProject"
-        },
-        {
-          "service": "devicefarm",
-          "operation": "GetProject"
-        },
-        {
-          "service": "codecatalyst",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "iotsitewise",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "codebuild",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "databrew",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "datazone",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "rekognition",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "devicefarm",
-          "operation": "CreateProject"
-        },
-        {
-          "service": "sagemaker",
-          "operation": "CreateProject"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceProjectDelete",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "codecatalyst",
-          "operation": "GetProject"
-        },
-        {
-          "service": "datazone",
-          "operation": "GetProject"
-        },
-        {
-          "service": "devicefarm",
-          "operation": "GetProject"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceProjectRead",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "codecatalyst",
-          "operation": "GetProject"
-        },
-        {
-          "service": "datazone",
-          "operation": "GetProject"
-        },
-        {
-          "service": "devicefarm",
-          "operation": "GetProject"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceProjectUpdate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "codecatalyst",
-          "operation": "GetProject"
-        },
-        {
-          "service": "datazone",
-          "operation": "GetProject"
-        },
-        {
-          "service": "devicefarm",
-          "operation": "GetProject"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceSegmentCreate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "pinpoint",
-          "operation": "GetSegment"
-        },
-        {
-          "service": "pinpoint",
-          "operation": "CreateSegment"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceSegmentRead",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "pinpoint",
-          "operation": "GetSegment"
-        }
-      ]
-    },
-    {
-      "module_path": "evidently",
-      "class_name": null,
-      "function_name": "resourceSegmentUpdate",
-      "call_type": "function",
-      "sdk_operations": [
-        {
-          "service": "pinpoint",
-          "operation": "GetSegment"
         }
       ]
     },
@@ -36567,11 +36347,11 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "GetGroup"
+          "operation": "AddUserToGroup"
         },
         {
           "service": "iam",
-          "operation": "AddUserToGroup"
+          "operation": "GetGroup"
         }
       ]
     },
@@ -36607,15 +36387,15 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "GetGroup"
-        },
-        {
-          "service": "iam",
           "operation": "AddUserToGroup"
         },
         {
           "service": "iam",
           "operation": "RemoveUserFromGroup"
+        },
+        {
+          "service": "iam",
+          "operation": "GetGroup"
         }
       ]
     },
@@ -36903,19 +36683,19 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "AttachGroupPolicy"
-        },
-        {
-          "service": "iam",
-          "operation": "ListEntitiesForPolicy"
-        },
-        {
-          "service": "iam",
           "operation": "AttachUserPolicy"
         },
         {
           "service": "iam",
           "operation": "AttachRolePolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "AttachGroupPolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "ListEntitiesForPolicy"
         }
       ]
     },
@@ -36927,15 +36707,15 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "DetachGroupPolicy"
-        },
-        {
-          "service": "iam",
           "operation": "DetachUserPolicy"
         },
         {
           "service": "iam",
           "operation": "DetachRolePolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "DetachGroupPolicy"
         }
       ]
     },
@@ -36959,18 +36739,6 @@
       "sdk_operations": [
         {
           "service": "iam",
-          "operation": "AttachGroupPolicy"
-        },
-        {
-          "service": "iam",
-          "operation": "DetachGroupPolicy"
-        },
-        {
-          "service": "iam",
-          "operation": "ListEntitiesForPolicy"
-        },
-        {
-          "service": "iam",
           "operation": "AttachUserPolicy"
         },
         {
@@ -36984,6 +36752,18 @@
         {
           "service": "iam",
           "operation": "DetachRolePolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "AttachGroupPolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "DetachGroupPolicy"
+        },
+        {
+          "service": "iam",
+          "operation": "ListEntitiesForPolicy"
         }
       ]
     },
@@ -44071,15 +43851,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateBucketAccessKey"
         },
         {
           "service": "lightsail",
           "operation": "GetBucketAccessKeys"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44091,11 +43871,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteBucketAccessKey"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteBucketAccessKey"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44119,15 +43899,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateBucket"
         },
         {
           "service": "lightsail",
           "operation": "GetBuckets"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44139,11 +43919,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteBucket"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteBucket"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44167,15 +43947,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "SetResourceAccessForBucket"
         },
         {
           "service": "lightsail",
           "operation": "GetBuckets"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44187,11 +43967,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "SetResourceAccessForBucket"
         },
         {
           "service": "lightsail",
-          "operation": "SetResourceAccessForBucket"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44215,15 +43995,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateBucketBundle"
         },
         {
           "service": "lightsail",
           "operation": "GetBuckets"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44235,15 +44015,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateCertificate"
         },
         {
           "service": "lightsail",
           "operation": "GetCertificates"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44255,11 +44035,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteCertificate"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteCertificate"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44463,15 +44243,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "AttachDisk"
         },
         {
           "service": "lightsail",
           "operation": "GetDisk"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44483,14 +44263,6 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
-          "operation": "GetInstanceState"
-        },
-        {
-          "service": "lightsail",
           "operation": "StopInstance"
         },
         {
@@ -44500,6 +44272,14 @@
         {
           "service": "lightsail",
           "operation": "StartInstance"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetInstanceState"
         }
       ]
     },
@@ -44523,15 +44303,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateDisk"
         },
         {
           "service": "lightsail",
           "operation": "GetDisk"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44543,11 +44323,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteDisk"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteDisk"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44871,18 +44651,6 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
-          "operation": "UntagResource"
-        },
-        {
-          "service": "lightsail",
-          "operation": "TagResource"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateKeyPair"
         },
         {
@@ -44892,6 +44660,18 @@
         {
           "service": "lightsail",
           "operation": "GetKeyPair"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
+        },
+        {
+          "service": "lightsail",
+          "operation": "UntagResource"
+        },
+        {
+          "service": "lightsail",
+          "operation": "TagResource"
         }
       ]
     },
@@ -44903,11 +44683,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteKeyPair"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteKeyPair"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44943,15 +44723,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "AttachInstancesToLoadBalancer"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -44963,11 +44743,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DetachInstancesFromLoadBalancer"
         },
         {
           "service": "lightsail",
-          "operation": "DetachInstancesFromLoadBalancer"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45023,15 +44803,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateLoadBalancerTlsCertificate"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancerTlsCertificates"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45043,11 +44823,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteLoadBalancerTlsCertificate"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteLoadBalancerTlsCertificate"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45071,15 +44851,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "CreateLoadBalancer"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45091,11 +44871,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "DeleteLoadBalancer"
         },
         {
           "service": "lightsail",
-          "operation": "DeleteLoadBalancer"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45107,15 +44887,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45127,11 +44907,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
-          "operation": "UpdateLoadBalancerAttribute"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45155,15 +44935,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45187,15 +44967,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45207,11 +44987,11 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
+          "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
-          "operation": "UpdateLoadBalancerAttribute"
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45235,15 +45015,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -45255,15 +45035,15 @@
       "sdk_operations": [
         {
           "service": "lightsail",
-          "operation": "GetOperation"
-        },
-        {
-          "service": "lightsail",
           "operation": "UpdateLoadBalancerAttribute"
         },
         {
           "service": "lightsail",
           "operation": "GetLoadBalancer"
+        },
+        {
+          "service": "lightsail",
+          "operation": "GetOperation"
         }
       ]
     },
@@ -48567,11 +48347,11 @@
         },
         {
           "service": "networkmanager",
-          "operation": "GetSiteToSiteVpnAttachment"
+          "operation": "GetConnectAttachment"
         },
         {
           "service": "networkmanager",
-          "operation": "GetConnectAttachment"
+          "operation": "GetSiteToSiteVpnAttachment"
         },
         {
           "service": "networkmanager",
@@ -48611,11 +48391,11 @@
       "sdk_operations": [
         {
           "service": "networkmanager",
-          "operation": "GetSiteToSiteVpnAttachment"
+          "operation": "GetConnectAttachment"
         },
         {
           "service": "networkmanager",
-          "operation": "GetConnectAttachment"
+          "operation": "GetSiteToSiteVpnAttachment"
         },
         {
           "service": "networkmanager",
@@ -49087,11 +48867,11 @@
         },
         {
           "service": "networkmanager",
-          "operation": "DisassociateTransitGatewayConnectPeer"
+          "operation": "DeleteGlobalNetwork"
         },
         {
           "service": "networkmanager",
-          "operation": "GetTransitGatewayConnectPeerAssociations"
+          "operation": "DescribeGlobalNetworks"
         },
         {
           "service": "networkmanager",
@@ -49103,11 +48883,11 @@
         },
         {
           "service": "networkmanager",
-          "operation": "DeleteGlobalNetwork"
+          "operation": "DisassociateTransitGatewayConnectPeer"
         },
         {
           "service": "networkmanager",
-          "operation": "DescribeGlobalNetworks"
+          "operation": "GetTransitGatewayConnectPeerAssociations"
         }
       ]
     },
@@ -57823,14 +57603,6 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketPolicy"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketRequestPayment"
-        },
-        {
-          "service": "s3",
           "operation": "GetBucketAccelerateConfiguration"
         },
         {
@@ -57843,19 +57615,15 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketVersioning"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketEncryption"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketLogging"
-        },
-        {
-          "service": "s3",
           "operation": "GetBucketAcl"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketRequestPayment"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketPolicy"
         },
         {
           "service": "s3",
@@ -57871,7 +57639,19 @@
         },
         {
           "service": "s3",
+          "operation": "GetBucketVersioning"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketLogging"
+        },
+        {
+          "service": "s3",
           "operation": "GetBucketWebsite"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketEncryption"
         },
         {
           "service": "s3",
@@ -58559,14 +58339,6 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketPolicy"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketRequestPayment"
-        },
-        {
-          "service": "s3",
           "operation": "GetBucketAccelerateConfiguration"
         },
         {
@@ -58579,11 +58351,19 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketVersioning"
+          "operation": "GetBucketAcl"
         },
         {
           "service": "s3",
-          "operation": "GetBucketEncryption"
+          "operation": "GetBucketRequestPayment"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketPolicy"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketVersioning"
         },
         {
           "service": "s3",
@@ -58591,11 +58371,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAcl"
+          "operation": "GetBucketWebsite"
         },
         {
           "service": "s3",
-          "operation": "GetBucketWebsite"
+          "operation": "GetBucketEncryption"
         },
         {
           "service": "s3",
@@ -58791,14 +58571,6 @@
       "sdk_operations": [
         {
           "service": "s3",
-          "operation": "GetBucketPolicy"
-        },
-        {
-          "service": "s3",
-          "operation": "GetBucketRequestPayment"
-        },
-        {
-          "service": "s3",
           "operation": "GetBucketAccelerateConfiguration"
         },
         {
@@ -58811,11 +58583,19 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketVersioning"
+          "operation": "GetBucketAcl"
         },
         {
           "service": "s3",
-          "operation": "GetBucketEncryption"
+          "operation": "GetBucketRequestPayment"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketPolicy"
+        },
+        {
+          "service": "s3",
+          "operation": "GetBucketVersioning"
         },
         {
           "service": "s3",
@@ -58823,11 +58603,11 @@
         },
         {
           "service": "s3",
-          "operation": "GetBucketAcl"
+          "operation": "GetBucketWebsite"
         },
         {
           "service": "s3",
-          "operation": "GetBucketWebsite"
+          "operation": "GetBucketEncryption"
         },
         {
           "service": "s3",
