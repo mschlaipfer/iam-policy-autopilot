@@ -5,7 +5,7 @@
 //! with complete IAM metadata.
 
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use super::{Action, Context, EnrichedSdkMethodCall, Explanation, OperationKey, Reason, Resource};
 use crate::enrichment::operation_fas_map::{OperationFasMap, OperationFasMaps};
@@ -14,6 +14,46 @@ use crate::enrichment::{Condition, Operation, ServiceReferenceLoader};
 use crate::errors::{ExtractorError, Result};
 use crate::service_configuration::ServiceConfiguration;
 use crate::{SdkMethodCall, SdkType};
+
+/// TEMPORARY hard-coded IAM-action overrides.
+///
+/// The authoritative service reference
+/// (`https://servicereference.us-east-1.amazonaws.com/v1/<svc>/<svc>.json`)
+/// reports, for some operations, an `AuthorizedAction` that is the literal
+/// operation name rather than the real IAM action. For example the S3
+/// operation `GetBucketLifecycleConfiguration` lists authorized action
+/// `s3:GetBucketLifecycleConfiguration`, which is **not** a valid IAM action —
+/// the real one is `s3:GetLifecycleConfiguration` (only the legacy
+/// `GetBucketLifecycle` operation is annotated with it).
+///
+/// This map rewrites such invalid `service:action` strings to the correct IAM
+/// action. Keyed by the full `service:action` name as it appears in the service
+/// reference's authorized actions.
+///
+/// NOTE: stopgap for a demo. The proper fix is upstream (corrected service
+/// reference data or a maintained override file), not a hard-coded table here.
+static ACTION_NAME_OVERRIDES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
+    HashMap::from([
+        (
+            "s3:GetBucketLifecycleConfiguration",
+            "s3:GetLifecycleConfiguration",
+        ),
+        (
+            "s3:PutBucketLifecycleConfiguration",
+            "s3:PutLifecycleConfiguration",
+        ),
+    ])
+});
+
+/// Apply [`ACTION_NAME_OVERRIDES`] to an authorized action name. Returns the
+/// corrected `service:action` string, or the input unchanged if no override
+/// applies. `service` is currently unused but kept for future per-service keys.
+fn override_action_name(_service: &str, action_name: &str) -> String {
+    ACTION_NAME_OVERRIDES.get(action_name).map_or_else(
+        || action_name.to_string(),
+        |corrected| (*corrected).to_string(),
+    )
+}
 
 /// A node in the FAS expansion dependency graph.
 #[derive(Clone, Debug)]
@@ -257,9 +297,14 @@ impl ResourceMatcher {
                                 operation_to_authorized_action.name
                             );
                             for action in &operation_to_authorized_action.authorized_actions {
+                                // TEMPORARY: correct authorized actions that the
+                                // service reference reports as the (invalid)
+                                // literal operation name. See
+                                // OPERATION_ACTION_OVERRIDES.
+                                let action_name = override_action_name(&op.service, &action.name);
                                 let enriched_resources = self
                                     .find_resources_for_action_in_service_reference(
-                                        &action.name,
+                                        &action_name,
                                         &service_reference,
                                     )?;
                                 let enriched_resources =
@@ -286,7 +331,7 @@ impl ResourceMatcher {
                                     reasons: vec![Reason::new(ops)],
                                 };
                                 let enriched_action = Action::new(
-                                    action.name.clone(),
+                                    action_name.clone(),
                                     enriched_resources,
                                     conditions,
                                     explanation,
