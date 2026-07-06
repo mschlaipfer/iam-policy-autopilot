@@ -18,9 +18,10 @@ impl GoplsCallGraphBuilder {
     pub(crate) async fn new(workspace_root: &Path) -> Result<Self, CallGraphError> {
         let options = LspClientOptions {
             initialize_timeout: Duration::from_secs(30),
-            open_document_timeout: Duration::from_secs(10),
-            request_timeout: Duration::from_secs(10),
+            open_document_timeout: Duration::from_secs(30),
+            request_timeout: Duration::from_secs(30),
             shutdown_timeout: Duration::from_secs(5),
+            idle_timeout: Duration::from_secs(300),
             // gopls returns Flat (SymbolInformation) by default, which lacks selection_range.
             // Hierarchical mode gives us DocumentSymbol with selection_range — needed to
             // position prepare_call_hierarchy on the function name, not the `func` keyword.
@@ -30,6 +31,10 @@ impl GoplsCallGraphBuilder {
                         hierarchical_document_symbol_support: Some(true),
                         ..Default::default()
                     }),
+                    ..Default::default()
+                }),
+                window: Some(lsp_types::WindowClientCapabilities {
+                    work_done_progress: Some(true),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -57,6 +62,10 @@ impl CallGraphBuilder for GoplsCallGraphBuilder {
             })?;
             client.open_document(file, &content).await?;
         }
+
+        log::info!("Waiting for language server to finish indexing...");
+        client.wait_for_idle().await?;
+        log::info!("Language server ready");
 
         let mut nodes = Vec::new();
         // Maps node index → (uri, selection_range start) for prepare_call_hierarchy
@@ -143,12 +152,11 @@ impl CallGraphBuilder for GoplsCallGraphBuilder {
                     if !source_file_set.contains(&callee_path) {
                         return None;
                     }
-                    let location = Location::from_lsp(&call.to.uri, &call.to.range)?;
-                    Some(FunctionNode {
-                        name: call.to.name,
-                        qualified_name: call.to.detail,
-                        location,
-                    })
+                    // Match against existing nodes to ensure consistent Location values
+                    nodes
+                        .iter()
+                        .find(|n| n.name == call.to.name && n.location.file_path == callee_path)
+                        .cloned()
                 })
                 .collect();
 
@@ -158,7 +166,7 @@ impl CallGraphBuilder for GoplsCallGraphBuilder {
         Ok(CallGraph::new(nodes, edges))
     }
 
-    async fn shutdown(self) -> Result<(), CallGraphError> {
+    async fn shutdown(self: Box<Self>) -> Result<(), CallGraphError> {
         self.client.shutdown().await?;
         Ok(())
     }
@@ -181,7 +189,7 @@ mod tests {
 
         let mut builder = GoplsCallGraphBuilder::new(&root).await.unwrap();
         let graph = builder.build(&root, &[root.join("main.go")]).await.unwrap();
-        builder.shutdown().await.unwrap();
+        Box::new(builder).shutdown().await.unwrap();
         graph
     }
 
